@@ -2,6 +2,7 @@ import glm
 import pygame as pg
 import numpy as np
 import moderngl as mgl
+from functions import get_gl_cords_for_rect
 
 
 class Widget:
@@ -11,11 +12,11 @@ class Widget:
         self.size: tuple[int] = size
         self.pos: tuple[int] = pos
 
-        self.vertices = self.ctx.buffer(self.__get_vertices())
-        self.uv = self.ctx.buffer(np.array(((0, 0), (0, 1), (1, 0), (1, 1)), dtype='float32') )
+        self.vertices = self.ctx.buffer(get_gl_cords_for_rect(self.app.size, self.size, self.pos))
+        self.uv = self.ctx.buffer(np.array(((0, 0), (0, 1), (1, 0), (1, 1)), dtype='float32'))
         self.color = self.ctx.buffer(glm.vec3(color))
 
-        self.program = app.program.load('colored_box')
+        self.program = app.program.load('textured_box')
 
         self.vao = self.ctx.vertex_array(self.program,
                                          [
@@ -23,24 +24,6 @@ class Widget:
                                              (self.uv, '2f /v', 'in_texture_cords'),
                                              (self.color, '3f /i', 'in_color')
                                          ])
-
-    def __get_vertices(self) -> np.ndarray:
-        w_size = pg.display.get_window_size()
-
-        i = 0
-        n = [[0], [], [], []]
-        for y in (0, self.size[1]):
-            for x in (0, self.size[0]):
-                n[i] = (self.pos[0] + x, w_size[1] - self.pos[1] - y)
-
-                i += 1
-
-        n[2], n[1] = n[1], n[2]
-
-        for i in range(4):
-            n[i] = tuple((n[i][j] / w_size[j] - 0.5) * 2 for j in (0, 1))
-
-        return np.array(n, dtype='float32')
 
     def move(self, offset: list[int | float, int | float] | tuple[int | float, int | float]) -> None:
         if len(offset) != 2:
@@ -51,7 +34,7 @@ class Widget:
 
         else:
             self.pos = tuple(int(self.pos[i] + offset[i]) for i in (0, 1))
-            self.vertices.write(self.__get_vertices())
+            self.vertices.write(get_gl_cords_for_rect(self.app.size, self.size, self.pos))
 
     def set_pos(self, pos: list[int | float, int | float] | tuple[int | float, int | float]) -> None:
         if len(pos) != 2:
@@ -62,7 +45,7 @@ class Widget:
 
         else:
             self.pos = pos
-            self.vertices.write(self.__get_vertices())
+            self.vertices.write(get_gl_cords_for_rect(self.app.size, self.size, self.pos))
 
     def set_color(self, color) -> None:
         self.color.write(glm.vec3(color))
@@ -76,9 +59,9 @@ class Widget:
 
         else:
             self.size = size
-            self.vertices.write(self.__get_vertices())
+            self.vertices.write(get_gl_cords_for_rect(self.app.size, self.size, self.pos))
 
-    def is_in(self, cords: list[int | float, int | float] | tuple[int | float, int | float]) -> bool:
+    def contains_dot(self, cords: list[int | float, int | float] | tuple[int | float, int | float]) -> bool:
         return all(0 < cords[i] - self.pos[i] < self.size[i] for i in (0, 1))
 
     def drag(self, mouse_pos):

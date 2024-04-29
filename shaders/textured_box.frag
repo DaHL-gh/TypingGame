@@ -9,7 +9,7 @@ uniform sampler2D symbol;
 
 void main() {
     float opacity = texture(symbol, uv).x;
-    vec3 color = vec3 (uv, 1);
+    vec3 color = vec3 (1, uv);
     fragColor = vec4 (color, opacity);
 
 }

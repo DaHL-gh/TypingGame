@@ -9,7 +9,7 @@ class Window:
     def __init__(self, size=(1600, 900)):
         pg.init()
 
-        self.fps = 144
+        self.fps = 1000000
         self.clock = pg.time.Clock()
         self.size = size
         self.display = pg.display.set_mode(size, flags=pg.OPENGL | pg.DOUBLEBUF | pg.RESIZABLE)
