@@ -1,27 +1,24 @@
-import glm
-import pygame as pg
-import numpy as np
 import moderngl as mgl
+import glm
+
+from glmanager import GlManager
 from functions import get_gl_cords_for_rect
 
 
 class Widget:
-    def __init__(self, app, ctx: mgl.Context, size=(150, 200), pos=(0, 0), color=(1, 0, 1)):
-        self.app = app
-        self.ctx = ctx
+    def __init__(self, gl_manager, size=(150, 200), pos=(0, 0), color=(1, 1, 1)):
+        self.gl_manager: GlManager = gl_manager
         self.size: tuple[int] = size
         self.pos: tuple[int] = pos
 
-        self.vertices = self.ctx.buffer(get_gl_cords_for_rect(self.app.size, self.size, self.pos))
-        self.uv = self.ctx.buffer(np.array(((0, 0), (0, 1), (1, 0), (1, 1)), dtype='float32'))
-        self.color = self.ctx.buffer(glm.vec3(color))
+        self.vertices = self.gl_manager.ctx.buffer(get_gl_cords_for_rect(self.gl_manager.ctx.screen.size, self.size, self.pos))
+        self.color = self.gl_manager.ctx.buffer(glm.vec3(color))
 
-        self.program = app.program.load('textured_box')
+        self.program = self.gl_manager.shader_program.load('textured_box')
 
-        self.vao = self.ctx.vertex_array(self.program,
+        self.vao = self.gl_manager.ctx.vertex_array(self.program,
                                          [
                                              (self.vertices, '2f /v', 'in_position'),
-                                             (self.uv, '2f /v', 'in_texture_cords'),
                                              (self.color, '3f /i', 'in_color')
                                          ])
 
@@ -34,7 +31,7 @@ class Widget:
 
         else:
             self.pos = tuple(int(self.pos[i] + offset[i]) for i in (0, 1))
-            self.vertices.write(get_gl_cords_for_rect(self.app.size, self.size, self.pos))
+            self.vertices.write(get_gl_cords_for_rect(self.gl_manager.ctx.screen.size, self.size, self.pos))
 
     def set_pos(self, pos: list[int | float, int | float] | tuple[int | float, int | float]) -> None:
         if len(pos) != 2:
@@ -45,7 +42,7 @@ class Widget:
 
         else:
             self.pos = pos
-            self.vertices.write(get_gl_cords_for_rect(self.app.size, self.size, self.pos))
+            self.vertices.write(get_gl_cords_for_rect(self.gl_manager.ctx.screen.size, self.size, self.pos))
 
     def set_color(self, color) -> None:
         self.color.write(glm.vec3(color))
@@ -59,7 +56,7 @@ class Widget:
 
         else:
             self.size = size
-            self.vertices.write(get_gl_cords_for_rect(self.app.size, self.size, self.pos))
+            self.vertices.write(get_gl_cords_for_rect(self.gl_manager.ctx.screen.size, self.size, self.pos))
 
     def contains_dot(self, cords: list[int | float, int | float] | tuple[int | float, int | float]) -> bool:
         return all(0 < cords[i] - self.pos[i] < self.size[i] for i in (0, 1))

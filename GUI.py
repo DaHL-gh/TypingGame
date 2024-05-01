@@ -1,47 +1,26 @@
-import glm
 import pygame as pg
-import freetype as ft
-import numpy as np
-import moderngl as mgl
+from numpy.random import rand
+import glm
 from structlinks.LinkedList import LinkedList
 
+import textRenderer
 from widget import Widget
-from numpy.random import rand
-
-face = ft.Face('fonts/CascadiaMono.ttf')
-w = h = 600 << 6
-face.set_char_size(width=w, height=h, hres=95, vres=95)
-face.load_char('@')
-glyph = face.glyph
-
-x = np.array(glyph.bitmap.buffer, dtype='u1')
-
-glyph_bbox = glyph.get_glyph().get_cbox(ft.FT_GLYPH_BBOX_MODES['FT_GLYPH_BBOX_PIXELS'])
-x_size = (glyph_bbox.xMax - glyph_bbox.xMin, glyph_bbox.yMax - glyph_bbox.yMin)
-print(glyph_bbox.xMax, glyph_bbox.xMin, glyph_bbox.yMax, glyph_bbox.yMin)
-
-
-print(glyph.bitmap.width, glyph.bitmap.rows)
 
 
 class GUI:
     def __init__(self, window):
         self.window = window
+        self.gl_manager = window.__gl_manager
 
-        self.w_ctx: mgl.Context = window.ctx
-        self.t = self.w_ctx.texture(size=(glyph.bitmap.width, glyph.bitmap.rows), data=x, components=1)
-        self.t.use()
+        self.font = textRenderer.Font(name='CascadiaMono', char_size=50)
+        self.line = textRenderer.Line(self.gl_manager, self.font, 'abcdef', (100, 100))
 
         self.dragged_widget = None
         self.last_press = dict((key, {'pos': (0, 0), 'time': 0}) for key in ('left', 'right', 'double_left'))
 
         self.widgets = LinkedList()
-        widget = Widget(window, window.ctx, pos=(100, 100), size=x_size)
+        widget = Widget(self.gl_manager, pos=(100, 100), size=(100, 100), color=(0.5, 0.2, 0.6))
         self.widgets.append(widget)
-        # for j in range(0, 900, 100):
-        #     for i in range(0, 1800, 100):
-        #         widget = Widget(window, window.ctx, pos=(i, j), size=x_size)
-        #         self.widgets.append(widget)
 
     def process_event(self, event):
         current_time = pg.time.get_ticks()
