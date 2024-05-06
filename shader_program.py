@@ -15,7 +15,7 @@ class ShaderProgram:
 
         program = self.ctx.program(vertex_shader=vertex_shader, fragment_shader=fragment_shader)
 
-        self.programs[shader_name] = program
+        # self.programs[shader_name] = program
 
         return program
 

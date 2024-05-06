@@ -16,8 +16,9 @@ class Glyph:
 
         glyph_bbox = glyph.get_glyph().get_cbox(ft.FT_GLYPH_BBOX_MODES['FT_GLYPH_BBOX_PIXELS'])
         self.offset = (glyph_bbox.xMin, glyph_bbox.yMin)
-        self.bbox_size = (glyph_bbox.xMax - glyph_bbox.xMin, glyph_bbox.yMax - glyph_bbox.yMin)
         self.glyph_size = (glyph.bitmap.width, glyph.bitmap.rows)
+
+        self.horizontal_advance = glyph.linearHoriAdvance // 2**16
 
 
 class Char:
@@ -31,6 +32,7 @@ class Char:
         self.color = self.gl_manager.ctx.buffer(glm.vec3((1, 1, 1)))
 
         self.texture = self.gl_manager.ctx.texture(size=self.glyph.glyph_size, data=self.glyph.bitmap, components=1)
+
         self.program = self.gl_manager.shader_program.load('text_render')
 
         self.vao = self.gl_manager.ctx.vertex_array(self.program,
@@ -40,14 +42,23 @@ class Char:
                                                         (self.color, '3f /i', 'in_color')
                                                     ])
 
-    def draw(self):
+    def draw(self, mode=mgl.TRIANGLE_STRIP):
         self.texture.use()
-        self.vao.render(mgl.TRIANGLE_STRIP)
+        self.vao.render(mode)
 
     def update_vertices(self, pos):
         self.vertices.write(get_gl_cords_for_rect(w_size=self.gl_manager.ctx.screen.size,
                                                   rect_size=self.glyph.glyph_size,
                                                   rect_pos=pos))
+
+    def release(self):
+        self.vertices.release()
+        self.uv.release()
+        self.color.release()
+
+        self.program.release()
+        self.texture.release()
+        self.vao.release()
 
 
 class Font:
@@ -84,12 +95,15 @@ class Line:
         for char in self.__chars:
             glyph = char.glyph
 
-            char.update_vertices((x[0] - glyph.offset[0], x[1] - glyph.glyph_size[1] - glyph.offset[1]))
-            x[0] += glyph.bbox_size[0] - glyph.offset[0] + 5
+            char.update_vertices((x[0] + glyph.offset[0], x[1] - glyph.offset[1] - glyph.glyph_size[1]))
+
+            x[0] += glyph.horizontal_advance
 
     def set_line(self, line: str):
-        self.__line = line
+        for char in self.__chars:
+            char.release()
 
+        self.__line = line
         self.__chars = []
         for char in line:
             self.__chars.append(Char(self.__gl_manager, self.__font.get_glyph(ord(char))))
@@ -100,6 +114,10 @@ class Line:
         self.__pos = pos
         self.update_vertices()
 
-    def draw(self):
+    def draw(self, mode=mgl.TRIANGLE_STRIP):
         for char in self.__chars:
-            char.draw()
+            char.draw(mode)
+
+    def release(self):
+        for char in self.__chars:
+            char.release()

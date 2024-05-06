@@ -64,5 +64,5 @@ class Widget:
     def drag(self, mouse_pos):
         self.set_pos(mouse_pos)
 
-    def draw(self) -> None:
-        self.vao.render(mgl.TRIANGLE_STRIP)
+    def draw(self, mode=mgl.TRIANGLE_STRIP) -> None:
+        self.vao.render(mode)

@@ -1,7 +1,8 @@
 import pygame as pg
-from numpy.random import rand
+import moderngl as mgl
 import glm
 from structlinks.LinkedList import LinkedList
+from numpy.random import rand
 
 import textRenderer
 from widget import Widget
@@ -10,13 +11,19 @@ from widget import Widget
 class GUI:
     def __init__(self, window):
         self.window = window
-        self.gl_manager = window.__gl_manager
-
-        self.font = textRenderer.Font(name='CascadiaMono', char_size=50)
-        self.line = textRenderer.Line(self.gl_manager, self.font, 'abcdef', (100, 100))
+        self.gl_manager = window.gl_manager
 
         self.dragged_widget = None
         self.last_press = dict((key, {'pos': (0, 0), 'time': 0}) for key in ('left', 'right', 'double_left'))
+
+        self.font = textRenderer.Font(name='CascadiaCodePLItalic', char_size=14)
+
+        self.lines = LinkedList()
+        t = [100, 100]
+        for x in ('ну оно вроде нормально работает!', 'text34534253242;342'):
+            t[1] += 200
+
+            self.lines.append(textRenderer.Line(self.gl_manager, self.font, x, t))
 
         self.widgets = LinkedList()
         widget = Widget(self.gl_manager, pos=(100, 100), size=(100, 100), color=(0.5, 0.2, 0.6))
@@ -67,6 +74,9 @@ class GUI:
             for widget in self.widgets:
                 widget.move((0, 0))
 
-    def draw(self):
+    def draw(self, mode=mgl.TRIANGLE_STRIP):
         for i in range(len(self.widgets)-1, -1, -1):
-            self.widgets[i].draw()
+            self.widgets[i].draw(mode)
+
+        for i in range(len(self.lines)-1, -1, -1):
+            self.lines[i].draw(mode)
