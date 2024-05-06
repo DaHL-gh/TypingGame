@@ -16,14 +16,13 @@ class GUI:
         self.dragged_widget = None
         self.last_press = dict((key, {'pos': (0, 0), 'time': 0}) for key in ('left', 'right', 'double_left'))
 
-        self.font = textRenderer.Font(name='CascadiaCodePLItalic', char_size=14)
+        self.font = textRenderer.Font(name='CascadiaCodePLItalic', char_size=10)
 
         self.lines = LinkedList()
         t = [100, 100]
-        for x in ('ну оно вроде нормально работает!', 'text34534253242;342'):
-            t[1] += 200
+        for x in ('ну оно вроде нормально работает!', ):
 
-            self.lines.append(textRenderer.Line(self.gl_manager, self.font, x, t))
+            self.lines.append(textRenderer.Renderer(self.gl_manager, self.font, x, t))
 
         self.widgets = LinkedList()
         widget = Widget(self.gl_manager, pos=(100, 100), size=(100, 100), color=(0.5, 0.2, 0.6))
@@ -72,7 +71,10 @@ class GUI:
 
         if event.type == pg.VIDEORESIZE:
             for widget in self.widgets:
-                widget.move((0, 0))
+                widget.update_vertices()
+
+            for line in self.lines:
+                line.update_vertices()
 
     def draw(self, mode=mgl.TRIANGLE_STRIP):
         for i in range(len(self.widgets)-1, -1, -1):

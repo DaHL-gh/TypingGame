@@ -1,30 +1,14 @@
 import moderngl as mgl
-import pygame as pg
-import glm
 
+from functions import get_norm_cords_for_rect
 from glmanager import GlManager
-from functions import get_rect_vertices
 
 
-class Widget:
+class GUIObject:
     def __init__(self, gl_manager, size=(150, 200), pos=(0, 0), color=(1, 1, 1)):
         self.gl_manager: GlManager = gl_manager
         self.size: tuple[int] = size
         self.pos: tuple[int] = pos
-
-        self.vertices = self.gl_manager.ctx.buffer(get_rect_vertices(pg.display.get_window_size(), self.size, self.pos))
-        self.color = self.gl_manager.ctx.buffer(glm.vec3(color))
-
-        self.program = self.gl_manager.shader_program.load('textured_box')
-
-        self.vao = self.gl_manager.ctx.vertex_array(self.program,
-                                         [
-                                             (self.vertices, '2f /v', 'in_position'),
-                                             (self.color, '3f /i', 'in_color')
-                                         ])
-
-    def update_vertices(self):
-        self.vertices.write(get_rect_vertices(pg.display.get_window_size(), self.size, self.pos))
 
     def move(self, offset: list[int | float, int | float] | tuple[int | float, int | float]) -> None:
         if len(offset) != 2:
@@ -35,7 +19,6 @@ class Widget:
 
         else:
             self.pos = tuple(int(self.pos[i] + offset[i]) for i in (0, 1))
-            self.update_vertices()
 
     def set_pos(self, pos: list[int | float, int | float] | tuple[int | float, int | float]) -> None:
         if len(pos) != 2:
@@ -46,10 +29,6 @@ class Widget:
 
         else:
             self.pos = pos
-            self.update_vertices()
-
-    def set_color(self, color) -> None:
-        self.color.write(glm.vec3(color))
 
     def set_size(self, size: list[int | float, int | float] | tuple[int | float, int | float]) -> None:
         if len(size) != 2:
@@ -60,7 +39,6 @@ class Widget:
 
         else:
             self.size = size
-            self.update_vertices()
 
     def contains_dot(self, cords: list[int | float, int | float] | tuple[int | float, int | float]) -> bool:
         return all(0 < cords[i] - self.pos[i] < self.size[i] for i in (0, 1))
