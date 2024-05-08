@@ -121,7 +121,6 @@ class Renderer:
         for char in self.chars:
             if self.left_limit is not None and self.pen[0] + char.glyph.glyph_size[0] > self.left_limit:
                 self.pen[1] += self.max_vertical_advance
-                print(self.font.face.max_advance_height)
                 self.pen[0] = 0
 
             pos = (self.pen[0] + char.glyph.offset[0],

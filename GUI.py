@@ -19,10 +19,17 @@ class GUI:
         self.font = textRenderer.Font(name='CascadiaCodePLItalic', char_size=10)
 
         self.lines = LinkedList()
-        t = [100, 100]
-        for x in ('ну оно вроде нормально работает!', ):
-
-            self.lines.append(textRenderer.Renderer(self.gl_manager, self.font, x, t))
+        x = ('''-Hi Timofey, can you lend me some money, please?
+-Hi Semen, how much money have you wanted to borrow?
+-3000 rubles.
+-Yeah, sure. But only if you tell me, why you need the money.
+-I have broken my phone and now I need money to replace the glass.
+-And is it worth it? I think you need to buy a new phone instead of repairing the old one.
+-I don't think I can afford to buy a new phone. So, I have only one solution: to repair the old one.
+-Okay, I'll send the money to your card. When will you pay me back?
+-I will pay you back on May 25th, after I have received a scholarship.
+-Okay, that's fine with me.''')
+        self.lines.append(textRenderer.Renderer(self.gl_manager, self.font, x, (0, 50), pg.display.get_window_size()[0]))
 
         self.widgets = LinkedList()
         widget = Widget(self.gl_manager, pos=(100, 100), size=(100, 100), color=(0.5, 0.2, 0.6))

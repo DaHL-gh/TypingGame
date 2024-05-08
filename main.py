@@ -11,7 +11,7 @@ class Window:
     def __init__(self, size=(1000, 600)):
         pg.init()
 
-        self.fps = 144
+        self.fps = 0
         self.clock = pg.time.Clock()
         self.size = size
         self.display = pg.display.set_mode(size, flags=pg.OPENGL | pg.DOUBLEBUF | pg.RESIZABLE)
@@ -54,6 +54,7 @@ class Window:
             self.handle_events()
 
             self.draw()
+            print(self.summ // 100)
 
             self.summ -= fps_buffer.pop(0)
             x = self.clock.get_fps()

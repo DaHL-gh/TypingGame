@@ -1,6 +1,5 @@
 import moderngl as mgl
 
-from functions import get_norm_cords_for_rect
 from glmanager import GlManager
 
 
