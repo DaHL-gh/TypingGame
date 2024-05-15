@@ -12,7 +12,7 @@ class Texture:
             texture = pg.image.load(f"textures/{path}")
             texture = pg.transform.flip(texture, flip_y=True, flip_x=False)
 
-            texture = self.ctx.texture(size=texture.get_size(), components=4, data=pg.image.tostring(texture, "RGBA"))
+            texture = self.ctx.bitmap_texture(size=texture.get_size(), components=4, data=pg.image.tostring(texture, "RGBA"))
 
             self.textures[path] = texture
 

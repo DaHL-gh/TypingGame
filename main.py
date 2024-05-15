@@ -3,8 +3,8 @@ import pygame as pg
 import moderngl as mgl
 from structlinks.LinkedList import LinkedList
 
-from glmanager import GlManager
 from GUI import GUI
+from PIL import Image
 
 
 class Window:
@@ -21,7 +21,8 @@ class Window:
 
         self.ctx = mgl.create_context()
         self.ctx.enable(mgl.BLEND)
-        self.gl_manager = GlManager(self.ctx)
+
+        self.ctx.simple_framebuffer((100, 100))
 
         self.gui = GUI(self)
 
@@ -36,7 +37,7 @@ class Window:
     def process_event(self, event):
         if event.type == pg.KEYDOWN:
             if event.dict['key'] == pg.K_F5:
-                print(self.summ // 100)
+                self.gui.frame_counter.line = f'fps: {self.summ // 100}'
 
         if event.type == pg.QUIT:
             pg.quit()
@@ -45,16 +46,20 @@ class Window:
         if event.type == pg.VIDEORESIZE:
             self.size = pg.display.get_window_size()
 
+            self.ctx.viewport = (0, 0) + self.size
+
+            self.ctx.screen
+
     def run(self):
         fps_buffer = LinkedList([100 for _ in range(100)])
         self.summ = 100 * 100
 
         while True:
-            self.ctx.clear(0.0, 0.0, 0)
+            self.ctx.clear()
             self.handle_events()
 
             self.draw()
-            print(self.summ // 100)
+            # print(self.summ // 100)
 
             self.summ -= fps_buffer.pop(0)
             x = self.clock.get_fps()

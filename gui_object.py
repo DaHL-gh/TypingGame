@@ -1,49 +1,66 @@
 import moderngl as mgl
-
-from glmanager import GlManager
+import numpy as np
+from functions import load_program
 
 
 class GUIObject:
-    def __init__(self, gl_manager, size=(150, 200), pos=(0, 0), color=(1, 1, 1)):
-        self.gl_manager: GlManager = gl_manager
-        self.size: tuple[int] = size
-        self.pos: tuple[int] = pos
+    def __init__(self, ctx: mgl.Context, size: tuple[int, int], pos: tuple[int, int]):
+        self.ctx = ctx
+        self.size = size
+        self.pos = pos
 
-    def move(self, offset: list[int | float, int | float] | tuple[int | float, int | float]) -> None:
-        if len(offset) != 2:
-            raise ValueError(f'argument len must be 2, not {len(offset)}')
+        self.vertices = self.ctx.buffer(reserve=32)
+        self.uv = self.ctx.buffer(np.array(((0, 0), (0, 1), (1, 0), (1, 1)), dtype='float32'))
 
-        elif not all(any(isinstance(offset[i], cls) for cls in (int, float)) for i in (0, 1)):
-            raise ValueError('argument should contain int or float values')
+        self.texture = self.ctx.texture(size=self.size, components=4)
+        self.program = load_program(self.ctx, 'textured_box')
 
-        else:
-            self.pos = tuple(int(self.pos[i] + offset[i]) for i in (0, 1))
+        self.vao = self.ctx.vertex_array(self.program,
+                                         [
+                                             (self.vertices, '2f /v', 'in_position'),
+                                             (self.uv, '2f /v', 'in_bitmap_cords'),
+                                         ])
 
-    def set_pos(self, pos: list[int | float, int | float] | tuple[int | float, int | float]) -> None:
-        if len(pos) != 2:
-            raise ValueError(f'argument len must be 2, not {len(pos)}')
+    def move(self, offset: tuple[int, int]) -> None:
+        self.pos = tuple(int(self.pos[i] + offset[i]) for i in (0, 1))
 
-        elif not all(any(isinstance(pos[i], cls) for cls in (int, float)) for i in (0, 1)):
-            raise ValueError('argument should contain int or float values')
+    def set_pos(self, pos: tuple[int, int]) -> None:
+        self.pos = pos
 
-        else:
-            self.pos = pos
+    def set_size(self, size: tuple[int, int]) -> None:
+        self.size = size
 
-    def set_size(self, size: list[int | float, int | float] | tuple[int | float, int | float]) -> None:
-        if len(size) != 2:
-            raise ValueError(f'argument len must be 2, not {len(size)}')
-
-        elif not all(any(isinstance(size[i], cls) for cls in (int, float)) for i in (0, 1)):
-            raise ValueError('argument should contain int or float values')
-
-        else:
-            self.size = size
-
-    def contains_dot(self, cords: list[int | float, int | float] | tuple[int | float, int | float]) -> bool:
+    def contains_dot(self, cords: tuple[int, int]) -> bool:
         return all(0 < cords[i] - self.pos[i] < self.size[i] for i in (0, 1))
 
-    def drag(self, mouse_pos):
+    def drag(self, mouse_pos: tuple[int, int]) -> None:
         self.set_pos(mouse_pos)
 
     def draw(self, mode=mgl.TRIANGLE_STRIP) -> None:
         self.vao.render(mode)
+
+
+class Widget(GUIObject):
+    def __init__(self, ctx: mgl.Context, size: tuple[int, int], pos: tuple[int, int]):
+        super().__init__(ctx=ctx, size=size, pos=pos)
+
+
+class Layout(GUIObject):
+    def __init__(self, ctx: mgl.Context, size: tuple[int, int], pos: tuple[int, int], rotation='vertical'):
+        super().__init__(ctx=ctx, size=size, pos=pos)
+        self.rotation = rotation
+
+        self.widgets = []
+
+    def calculate_shapes(self):
+        ...
+
+    def add_widget(self, widget: Widget):
+        ...
+
+    def draw(self, mode=mgl.TRIANGLE_STRIP):
+        for widget in self.widgets:
+            widget.draw(mode)
+
+        self.vao.render(mode)
+

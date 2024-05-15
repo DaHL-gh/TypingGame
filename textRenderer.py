@@ -1,11 +1,12 @@
+from __future__ import annotations
+
+import glm
 import moderngl as mgl
 import pygame as pg
 import numpy as np
 import freetype as ft
-import glm
 
-from glmanager import GlManager
-from functions import get_rect_vertices, convert_vec2
+from functions import get_rect_vertices, convert_vec2, load_program, get_part_of_frame_buffer
 
 
 class Glyph:
@@ -42,107 +43,178 @@ class Font:
 
 
 class Char:
-    def __init__(self, gl_manager: GlManager, glyph: Glyph, program: mgl.Program, texture: mgl.Texture):
-        self.gl_manager = gl_manager
+    def __init__(self, ctx: mgl.Context, glyph: Glyph, program: mgl.Program, bitmap_texture: mgl.Texture, pos=(0, 0)):
+        self.ctx = ctx
         self.glyph = glyph
 
-        self.vertices = self.gl_manager.ctx.buffer(reserve=32)
-        self.uv = self.gl_manager.ctx.buffer(np.array(((0, 0), (0, 1), (1, 0), (1, 1)), dtype='float32'))
-        self.color = self.gl_manager.ctx.buffer(glm.vec3((1, 1, 1)))
+        self.vertices = self.ctx.buffer(reserve=32)
+        self.pos = pos
+        self.uv = self.ctx.buffer(np.array(((0, 0), (0, 1), (1, 0), (1, 1)), dtype='float32'))
 
-        self.texture = texture
+        self.bitmap_texture = bitmap_texture
+
         self.program = program
 
-        self.vao = self.gl_manager.ctx.vertex_array(self.program,
-                                                    [
-                                                        (self.vertices, '2f /v', 'in_position'),
-                                                        (self.uv, '2f /v', 'in_bitmap_cords'),
-                                                        (self.color, '3f /i', 'in_color')
-                                                    ])
 
-    def update_vertices(self, pos):
-        self.vertices.write(get_rect_vertices(w_size=pg.display.get_window_size(),
+
+        self.vao = self.ctx.vertex_array(self.program,
+                                         [
+                                             (self.vertices, '2f /v', 'in_position'),
+                                             (self.uv, '2f /v', 'in_bitmap_cords'),
+                                         ])
+
+    @property
+    def pos(self):
+        return self._pos
+
+    @pos.setter
+    def pos(self, pos: tuple[int, int]):
+        self._pos = pos
+        self.vertices.write(get_rect_vertices(fb_size=self.ctx.fbo.size,
                                               rect_size=self.glyph.glyph_size,
                                               rect_pos=pos))
 
     def draw(self, mode=mgl.TRIANGLE_STRIP):
-        self.texture.use()
+        self.bitmap_texture.use()
         self.vao.render(mode)
 
     def release(self):
         self.vertices.release()
         self.uv.release()
-        self.color.release()
 
         self.vao.release()
 
 
 class Renderer:
-    def __init__(self, gl_manager: GlManager, font: Font, line: str, pos: tuple[int, int], left_limit: int = 100):
-        self.gl_manager = gl_manager
+    def __init__(self, ctx: mgl.Context, font: Font, line: str, pos: tuple[int, int], size: tuple[int, int]):
+        self.ctx = ctx
         self.font = font
-        self.line = line
-        self.pos = pos
 
         self.max_vertical_advance = 0
-        self.left_limit = left_limit
         self.pen = [0, 0]
-
-        self.textures = {}
-        self.program = self.gl_manager.shader_program.load('text_render')
-        self.program['w_pos'].write(convert_vec2(pg.display.get_window_size(), self.pos))
+        self.texture = ctx.texture((1, 1), components=1)
+        self.texture.filter = (mgl.NEAREST, mgl.NEAREST)
 
         self.chars = []
-        self.set_line(line)
+        self.bitmap_textures = {}
 
-    def set_line(self, line: str):
-        for char in self.chars:
-            char.release()
-        self.chars = []
+        self.program = load_program(self.ctx, 'text_render')
 
+        self.vertices = self.ctx.buffer(reserve=32)
+        self.framebuffer = self.ctx.framebuffer(self.texture)
+
+        self.size = size
+        self.pos = pos
         self.line = line
+
+        self.uv = self.ctx.buffer(np.array(((0, 1), (0, 0), (1, 1), (1, 0)), dtype='float32'))
+
+        self.vao = self.ctx.vertex_array(self.program,
+                                         [
+                                             (self.vertices, '2f /v', 'in_position'),
+                                             (self.uv, '2f /v', 'in_bitmap_cords'),
+                                         ])
+
+    @property
+    def line(self):
+        return self._line
+
+    @line.setter
+    def line(self, line: str):
+        self._release_chars()
+
+        self._line = line
         for char in line:
             glyph = self.font.get_glyph(ord(char))
-
-            if char not in self.textures:
-                self.textures[char] = self.gl_manager.ctx.texture(size=glyph.glyph_size, data=glyph.bitmap,
-                                                                  components=1)
-
-            self.chars.append(Char(self.gl_manager, glyph, self.program, self.textures[char]))
 
             if glyph.vertical_advance > self.max_vertical_advance:
                 self.max_vertical_advance = glyph.vertical_advance
 
-        self.update_vertices()
+            if char not in self.bitmap_textures:
+                self.bitmap_textures[char] = self.ctx.texture(size=glyph.glyph_size, data=glyph.bitmap, components=1)
+                self.bitmap_textures[char].filter = (mgl.NEAREST, mgl.NEAREST)
 
-    def update_vertices(self):
-        self.pen = [0, 0]
+            self.chars.append(Char(self.ctx, glyph, self.program, self.bitmap_textures[char]))
+
+        self._update_char_pos()
+
+    @property
+    def pos(self):
+        return self._pos
+
+    @pos.setter
+    def pos(self, pos: tuple[int, int]):
+        self._pos = pos
+
+        self.vertices.write(get_rect_vertices(pg.display.get_window_size(), self.size, self.pos))
+
+    @property
+    def size(self):
+        return self._size
+
+    @size.setter
+    def size(self, size: tuple[int, int]):
+        self._size = size
+
+        self._update_framebuffer()
+
+    def _update_framebuffer(self):
+        self.framebuffer.release()
+        self.framebuffer = self.ctx.framebuffer(self.ctx.texture(size=self.size, components=4))
+
+        self._update_char_pos()
+
+    def _update_char_pos(self):
+        self.framebuffer.use()
+
+        self.pen = [0, self.max_vertical_advance]
 
         for char in self.chars:
-            if self.left_limit is not None and self.pen[0] + char.glyph.glyph_size[0] > self.left_limit:
-                self.pen[1] += self.max_vertical_advance
+            if self.pen[0] + char.glyph.glyph_size[0] > self.size[0]:
                 self.pen[0] = 0
+                self.pen[1] += self.max_vertical_advance
 
-            pos = (self.pen[0] + char.glyph.offset[0],
-                   self.pen[1] - char.glyph.offset[1] - char.glyph.glyph_size[1])
-
-            char.update_vertices(pos)
+            char.pos = (self.pen[0] + char.glyph.offset[0],
+                        self.pen[1] - char.glyph.offset[1] - char.glyph.glyph_size[1])
 
             self.pen[0] += char.glyph.horizontal_advance
 
-    def set_pos(self, pos: tuple[int, int]):
-        self.pos = pos
+        self._update_texture()
+
+        self.ctx.screen.use()
+
+    def _update_texture(self):
+        self.framebuffer.clear(0)
+
+        for char in self.chars:
+            char.draw(mgl.TRIANGLE_STRIP)
+
+        self.texture.release()
+        self.texture = self.ctx.texture(size=self.size, components=4, data=self.framebuffer.read(components=4))
 
     def draw(self, mode=mgl.TRIANGLE_STRIP):
-        self.program['w_pos'].write(convert_vec2(pg.display.get_window_size(), self.pos))
+
+        self.texture.use()
+        self.vao.render(mode)
+
+    def _release_chars(self):
         for char in self.chars:
-            char.draw(mode)
+            char.release()
+        self.chars = []
 
     def release(self):
         self.program.release()
 
-        for t in self.textures.values():
-            t.release()
+        for bitmap in self.bitmap_textures.values():
+            bitmap.release()
 
-        for char in self.chars:
-            char.release()
+        self._release_chars()
+
+    def contains_dot(self, cords: list[int | float, int | float] | tuple[int | float, int | float]) -> bool:
+        return all(0 < cords[i] - self.pos[i] < self.size[i] for i in (0, 1))
+
+    def drag(self, mouse_pos):
+        self.pos = mouse_pos
+
+    def move(self, offset: list[int | float, int | float] | tuple[int | float, int | float]) -> None:
+        self.pos = tuple(int(self.pos[i] + offset[i]) for i in (0, 1))

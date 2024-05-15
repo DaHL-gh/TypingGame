@@ -11,28 +11,27 @@ from widget import Widget
 class GUI:
     def __init__(self, window):
         self.window = window
-        self.gl_manager = window.gl_manager
+        self.ctx = window.ctx
 
-        self.dragged_widget = None
+        self.dragged_widget: None | Widget = None
         self.last_press = dict((key, {'pos': (0, 0), 'time': 0}) for key in ('left', 'right', 'double_left'))
 
-        self.font = textRenderer.Font(name='CascadiaCodePLItalic', char_size=10)
-
-        self.lines = LinkedList()
-        x = ('''-Hi Timofey, can you lend me some money, please?
--Hi Semen, how much money have you wanted to borrow?
--3000 rubles.
--Yeah, sure. But only if you tell me, why you need the money.
--I have broken my phone and now I need money to replace the glass.
--And is it worth it? I think you need to buy a new phone instead of repairing the old one.
--I don't think I can afford to buy a new phone. So, I have only one solution: to repair the old one.
--Okay, I'll send the money to your card. When will you pay me back?
--I will pay you back on May 25th, after I have received a scholarship.
--Okay, that's fine with me.''')
-        self.lines.append(textRenderer.Renderer(self.gl_manager, self.font, x, (0, 50), pg.display.get_window_size()[0]))
+        self.font = textRenderer.Font(name='CascadiaMono', char_size=10)
 
         self.widgets = LinkedList()
-        widget = Widget(self.gl_manager, pos=(100, 100), size=(100, 100), color=(0.5, 0.2, 0.6))
+
+        x = ('''Context.detect_framebuffer()
+Detect a framebuffer.
+This is already done when creating a context, but if the underlying window library for some changes the default
+framebuffer during the lifetime of the application this might be necessary.
+Args:
+glo (int): Frame''')
+        self.frame_counter = textRenderer.Renderer(self.ctx, self.font, line='fps: ', pos=(0, 0), size=(100, 100))
+        self.widgets.append(self.frame_counter)
+
+        self.widgets.append(textRenderer.Renderer(self.ctx, self.font, line=x, pos=(0, 0), size=(200, 150)))
+
+        widget = Widget(self.ctx, pos=(500, 300), size=(200, 200), color=(0.5, 0, 1))
         self.widgets.append(widget)
 
     def process_event(self, event):
@@ -65,7 +64,7 @@ class GUI:
 
         if event.type == pg.MOUSEMOTION:
             # dragging
-            if event.dict['buttons'][0] and self.dragged_widget is None and any(abs(self.last_press['left']['pos'][i] - event.dict['pos'][i]) > 4 for i in (0, 1)):
+            if event.dict['buttons'][0] and self.dragged_widget is None and any(abs(self.last_press['left']['pos'][i] - event.dict['pos'][i]) > 2 for i in (0, 1)):
                 for i in range(len(self.widgets)):
                     if self.widgets[i].contains_dot(self.last_press['left']['pos']):
                         self.dragged_widget = self.widgets[i]
@@ -80,12 +79,6 @@ class GUI:
             for widget in self.widgets:
                 widget.update_vertices()
 
-            for line in self.lines:
-                line.update_vertices()
-
     def draw(self, mode=mgl.TRIANGLE_STRIP):
         for i in range(len(self.widgets)-1, -1, -1):
             self.widgets[i].draw(mode)
-
-        for i in range(len(self.lines)-1, -1, -1):
-            self.lines[i].draw(mode)
