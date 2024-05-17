@@ -3,27 +3,28 @@ import pygame as pg
 import moderngl as mgl
 from structlinks.LinkedList import LinkedList
 
-from GUI import GUI
-from PIL import Image
+from gui import GUI
 
 
 class Window:
     def __init__(self, size=(1000, 600)):
-        pg.init()
 
-        self.fps = 0
-        self.clock = pg.time.Clock()
-        self.size = size
+        # SETTING PYGAME TO WORK WITH OPENGL
         self.display = pg.display.set_mode(size, flags=pg.OPENGL | pg.DOUBLEBUF | pg.RESIZABLE)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE)
 
+        # CREATING CONTEXT
         self.ctx = mgl.create_context()
         self.ctx.enable(mgl.BLEND)
 
-        self.ctx.simple_framebuffer((100, 100))
+        # WINDOW PARAMETERS
+        self.fps = 60
+        self.size = size
 
+        # OTHER ATTRIBUTES
+        self.clock = pg.time.Clock()
         self.gui = GUI(self)
 
     def draw(self):
@@ -46,10 +47,6 @@ class Window:
         if event.type == pg.VIDEORESIZE:
             self.size = pg.display.get_window_size()
 
-            self.ctx.viewport = (0, 0) + self.size
-
-            self.ctx.screen
-
     def run(self):
         fps_buffer = LinkedList([100 for _ in range(100)])
         self.summ = 100 * 100
@@ -65,11 +62,14 @@ class Window:
             x = self.clock.get_fps()
             self.summ += x
             fps_buffer.append(x)
-            self.clock.tick(self.fps)
 
             pg.display.flip()
 
+            self.clock.tick(self.fps)
+
 
 if __name__ == '__main__':
+    pg.init()
+
     w = Window()
     w.run()

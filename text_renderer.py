@@ -55,8 +55,6 @@ class Char:
 
         self.program = program
 
-
-
         self.vao = self.ctx.vertex_array(self.program,
                                          [
                                              (self.vertices, '2f /v', 'in_position'),
@@ -218,3 +216,6 @@ class Renderer:
 
     def move(self, offset: list[int | float, int | float] | tuple[int | float, int | float]) -> None:
         self.pos = tuple(int(self.pos[i] + offset[i]) for i in (0, 1))
+
+    def update_vertices(self):
+        self.pos = self.pos

@@ -4,7 +4,7 @@ import glm
 from structlinks.LinkedList import LinkedList
 from numpy.random import rand
 
-import textRenderer
+import text_renderer
 from widget import Widget
 
 
@@ -16,7 +16,7 @@ class GUI:
         self.dragged_widget: None | Widget = None
         self.last_press = dict((key, {'pos': (0, 0), 'time': 0}) for key in ('left', 'right', 'double_left'))
 
-        self.font = textRenderer.Font(name='CascadiaMono', char_size=10)
+        self.font = text_renderer.Font(name='CascadiaMono', char_size=10)
 
         self.widgets = LinkedList()
 
@@ -26,10 +26,10 @@ This is already done when creating a context, but if the underlying window libra
 framebuffer during the lifetime of the application this might be necessary.
 Args:
 glo (int): Frame''')
-        self.frame_counter = textRenderer.Renderer(self.ctx, self.font, line='fps: ', pos=(0, 0), size=(100, 100))
+        self.frame_counter = text_renderer.Renderer(self.ctx, self.font, line='fps: ', pos=(0, 0), size=(100, 100))
         self.widgets.append(self.frame_counter)
 
-        self.widgets.append(textRenderer.Renderer(self.ctx, self.font, line=x, pos=(0, 0), size=(200, 150)))
+        self.widgets.append(text_renderer.Renderer(self.ctx, self.font, line=x, pos=(0, 0), size=(200, 150)))
 
         widget = Widget(self.ctx, pos=(500, 300), size=(200, 200), color=(0.5, 0, 1))
         self.widgets.append(widget)
