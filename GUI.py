@@ -9,12 +9,14 @@ from widget import Widget
 
 
 class GUI:
+    mouse_data = {1: 'left', 2: 'middle', 3: 'right'}
+
     def __init__(self, window):
         self.window = window
         self.ctx = window.ctx
 
         self.dragged_widget: None | Widget = None
-        self.last_press = dict((key, {'pos': (0, 0), 'time': 0}) for key in ('left', 'right', 'double_left'))
+        self.last_press = dict((key, dict((x, {'pos': (0, 0), 'time': 0}) for x in ('single', 'double'))) for key in ('left', 'middle', 'right'))
 
         self.font = text_renderer.Font(name='CascadiaMono', char_size=10)
 
@@ -34,50 +36,49 @@ glo (int): Frame''')
         widget = Widget(self.ctx, pos=(500, 300), size=(200, 200), color=(0.5, 0, 1))
         self.widgets.append(widget)
 
-    def process_event(self, event):
+    def mouse_down(self, button_name, mouse_pos):
         current_time = pg.time.get_ticks()
 
-        if event.type == pg.MOUSEBUTTONDOWN:
+        time_from_last_doubleclick = current_time - self.last_press[button_name]['double']['time']
+        if_doubleclick_out_of_range = any(abs(self.last_press[button_name]['double']['pos'][i] - mouse_pos[i]) > 2 for i in (0, 1))
 
-            # left button
-            if event.dict['button'] == 1:
-                # doubleclick
-                if (current_time - self.last_press['double_left']['time'] > 500 or
-                        any(abs(self.last_press['double_left']['pos'][i] - event.dict['pos'][i]) > 4 for i in (0, 1))):
-                    if (current_time - self.last_press['left']['time'] < 500 and
-                            all(abs(self.last_press['left']['pos'][i] - event.dict['pos'][i]) < 4 for i in (0, 1))):
+        time_from_last_click = current_time - self.last_press[button_name]['single']['time']
+        if_click_in_range = any(abs(self.last_press[button_name]['single']['pos'][i] - mouse_pos[i]) < 2 for i in (0, 1))
 
-                        self.widgets[0].set_color(glm.vec3((rand(1, 3)[0])))
-                        self.widgets[0].set_pos(event.dict['pos'])
+        # DOUBLE CLICK
+        if time_from_last_doubleclick > 500 or if_doubleclick_out_of_range:
+            if time_from_last_click < 500 and if_click_in_range:
+                self.mouse_doubleclick(button_name, mouse_pos)
 
-                        self.last_press['double_left']['pos'] = event.dict['pos']
-                        self.last_press['double_left']['time'] = current_time
+                self.last_press[button_name]['double']['pos'] = mouse_pos
+                self.last_press[button_name]['double']['time'] = current_time
 
-                self.last_press['left']['pos'] = event.dict['pos']
-                self.last_press['left']['time'] = current_time
+        # SINGLE CLICK
+        self.last_press[button_name]['single']['pos'] = mouse_pos
+        self.last_press[button_name]['single']['time'] = current_time
 
-        if event.type == pg.MOUSEBUTTONUP:
+    def mouse_up(self, button_name, mouse_pos):
+        if button_name == 'left':
+            self.dragged_widget = None
 
-            # left button
-            if event.dict['button'] == 1:
-                self.dragged_widget = None
+    def mouse_doubleclick(self, button_name, mouse_pos):
+        self.widgets[0].set_color(glm.vec3((rand(1, 3)[0])))
+        self.widgets[0].set_pos(mouse_pos)
 
-        if event.type == pg.MOUSEMOTION:
-            # dragging
-            if event.dict['buttons'][0] and self.dragged_widget is None and any(abs(self.last_press['left']['pos'][i] - event.dict['pos'][i]) > 2 for i in (0, 1)):
-                for i in range(len(self.widgets)):
-                    if self.widgets[i].contains_dot(self.last_press['left']['pos']):
-                        self.dragged_widget = self.widgets[i]
-                        self.widgets.pop(i)
-                        self.widgets.insert(0, self.dragged_widget)
-                        break
+    def mouse_motion(self, pressed_buttons, mouse_pos, movement):
+        if_click_out_of_range = any(abs(self.last_press['left']['single']['pos'][i] - mouse_pos[i]) > 2 for i in (0, 1))
 
-            if self.dragged_widget is not None:
-                self.dragged_widget.move(event.dict['rel'])
+        # DRAGGING
+        if pressed_buttons[0] and self.dragged_widget is None and if_click_out_of_range:
+            for i in range(len(self.widgets)):
+                if self.widgets[i].contains_dot(self.last_press['left']['single']['pos']):
+                    self.dragged_widget = self.widgets[i]
+                    self.widgets.pop(i)
+                    self.widgets.insert(0, self.dragged_widget)
+                    break
 
-        if event.type == pg.VIDEORESIZE:
-            for widget in self.widgets:
-                widget.update_vertices()
+        if self.dragged_widget is not None:
+            self.dragged_widget.move(movement)
 
     def draw(self, mode=mgl.TRIANGLE_STRIP):
         for i in range(len(self.widgets)-1, -1, -1):
