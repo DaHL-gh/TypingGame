@@ -4,7 +4,7 @@ import moderngl as mgl
 from structlinks.LinkedList import LinkedList
 
 from gui import GUI
-
+from event_handler import EventHandler
 
 class Window:
     def __init__(self, size=(1000, 600)):
@@ -25,27 +25,11 @@ class Window:
 
         # OTHER ATTRIBUTES
         self.clock = pg.time.Clock()
+        self.event_handler = EventHandler(self)
         self.gui = GUI(self)
 
     def draw(self):
         self.gui.draw()
-
-    def handle_events(self):
-        for event in pg.event.get():
-            self.gui.process_event(event)
-            self.process_event(event)
-
-    def process_event(self, event):
-        if event.type == pg.KEYDOWN:
-            if event.dict['key'] == pg.K_F5:
-                self.gui.frame_counter.line = f'fps: {self.summ // 100}'
-
-        if event.type == pg.QUIT:
-            pg.quit()
-            sys.exit()
-
-        if event.type == pg.VIDEORESIZE:
-            self.size = pg.display.get_window_size()
 
     def run(self):
         fps_buffer = LinkedList([100 for _ in range(100)])
@@ -53,7 +37,7 @@ class Window:
 
         while True:
             self.ctx.clear()
-            self.handle_events()
+            self.event_handler.handle_events()
 
             self.draw()
             # print(self.summ // 100)
