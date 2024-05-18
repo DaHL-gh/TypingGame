@@ -1,10 +1,12 @@
-import sys
+import random
+
 import pygame as pg
 import moderngl as mgl
 from structlinks.LinkedList import LinkedList
 
 from gui import GUI
 from event_handler import EventHandler
+
 
 class Window:
     def __init__(self, size=(1000, 600)):
@@ -41,6 +43,8 @@ class Window:
 
             self.draw()
             # print(self.summ // 100)
+
+            self.gui.widgets[0].size = ((1000), (1000))
 
             self.summ -= fps_buffer.pop(0)
             x = self.clock.get_fps()

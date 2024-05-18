@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import glm
 import moderngl as mgl
 import pygame as pg
 import numpy as np
 import freetype as ft
 
-from functions import get_rect_vertices, convert_vec2, load_program, get_part_of_frame_buffer
+from functions import get_rect_vertices, load_program
 
 
 class Glyph:
@@ -88,30 +87,34 @@ class Renderer:
         self.ctx = ctx
         self.font = font
 
+        # FOR CHAR POSITIONS
         self.max_vertical_advance = 0
         self.pen = [0, 0]
-        self.texture = ctx.texture((1, 1), components=1)
-        self.texture.filter = (mgl.NEAREST, mgl.NEAREST)
 
+        # CONTAINERS
         self.chars = []
         self.bitmap_textures = {}
 
-        self.program = load_program(self.ctx, 'text_render')
-
-        self.vertices = self.ctx.buffer(reserve=32)
+        # MGL ATTRIBUTES
+        self.texture = ctx.texture((1, 1), components=1)
+        self.texture.filter = (mgl.NEAREST, mgl.NEAREST)
         self.framebuffer = self.ctx.framebuffer(self.texture)
 
-        self.size = size
-        self.pos = pos
-        self.line = line
+        self.vertices = self.ctx.buffer(reserve=32)
+        self.uv = self.ctx.buffer(np.array(((0, 0), (0, -1), (1, 0), (1, -1)), dtype='float32'))
 
-        self.uv = self.ctx.buffer(np.array(((0, 1), (0, 0), (1, 1), (1, 0)), dtype='float32'))
+        self.program = load_program(self.ctx, 'text_render')
 
         self.vao = self.ctx.vertex_array(self.program,
                                          [
                                              (self.vertices, '2f /v', 'in_position'),
                                              (self.uv, '2f /v', 'in_bitmap_cords'),
                                          ])
+
+        # PROPERTIES
+        self.size = size
+        self.pos = pos
+        self.line = line
 
     @property
     def line(self):
@@ -154,9 +157,6 @@ class Renderer:
     def size(self, size: tuple[int, int]):
         self._size = size
 
-        self._update_framebuffer()
-
-    def _update_framebuffer(self):
         self.framebuffer.release()
         self.framebuffer = self.ctx.framebuffer(self.ctx.texture(size=self.size, components=4))
 
@@ -177,12 +177,7 @@ class Renderer:
 
             self.pen[0] += char.glyph.horizontal_advance
 
-        self._update_texture()
-
-        self.ctx.screen.use()
-
-    def _update_texture(self):
-        self.framebuffer.clear(0)
+        self.framebuffer.clear()
 
         for char in self.chars:
             char.draw(mgl.TRIANGLE_STRIP)
@@ -190,8 +185,9 @@ class Renderer:
         self.texture.release()
         self.texture = self.ctx.texture(size=self.size, components=4, data=self.framebuffer.read(components=4))
 
-    def draw(self, mode=mgl.TRIANGLE_STRIP):
+        self.ctx.screen.use()
 
+    def draw(self, mode=mgl.TRIANGLE_STRIP):
         self.texture.use()
         self.vao.render(mode)
 

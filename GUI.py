@@ -12,22 +12,23 @@ class GUI:
     mouse_data = {1: 'left', 2: 'middle', 3: 'right'}
 
     def __init__(self, window):
+        # WINDOW
         self.window = window
         self.ctx = window.ctx
 
+        # MOUSE
         self.dragged_widget: None | Widget = None
-        self.last_press = dict((key, dict((x, {'pos': (0, 0), 'time': 0}) for x in ('single', 'double'))) for key in ('left', 'middle', 'right'))
+        self.last_press = dict((key, dict((key, {'pos': (0, 0), 'time': 0}) for key in ('single', 'double')))
+                               for key in self.mouse_data.values())
 
+        # WIDGETS
         self.font = text_renderer.Font(name='CascadiaMono', char_size=10)
 
         self.widgets = LinkedList()
-
-        x = ('''Context.detect_framebuffer()
-Detect a framebuffer.
+        x = ('''Context.detect_framebuffer() Detect a framebuffer.
 This is already done when creating a context, but if the underlying window library for some changes the default
 framebuffer during the lifetime of the application this might be necessary.
-Args:
-glo (int): Frame''')
+Args: glo (int): Frame''')
         self.frame_counter = text_renderer.Renderer(self.ctx, self.font, line='fps: ', pos=(0, 0), size=(100, 100))
         self.widgets.append(self.frame_counter)
 
@@ -36,18 +37,24 @@ glo (int): Frame''')
         widget = Widget(self.ctx, pos=(500, 300), size=(200, 200), color=(0.5, 0, 1))
         self.widgets.append(widget)
 
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#                                                        MOUSE
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     def mouse_down(self, button_name, mouse_pos):
         current_time = pg.time.get_ticks()
 
         time_from_last_doubleclick = current_time - self.last_press[button_name]['double']['time']
-        if_doubleclick_out_of_range = any(abs(self.last_press[button_name]['double']['pos'][i] - mouse_pos[i]) > 2 for i in (0, 1))
+        if_doubleclick_out_of_range = any(
+            abs(self.last_press[button_name]['double']['pos'][i] - mouse_pos[i]) > 2 for i in (0, 1))
 
         time_from_last_click = current_time - self.last_press[button_name]['single']['time']
-        if_click_in_range = any(abs(self.last_press[button_name]['single']['pos'][i] - mouse_pos[i]) < 2 for i in (0, 1))
+        if_click_in_range = any(
+            abs(self.last_press[button_name]['single']['pos'][i] - mouse_pos[i]) < 2 for i in (0, 1))
 
         # DOUBLE CLICK
-        if time_from_last_doubleclick > 500 or if_doubleclick_out_of_range:
-            if time_from_last_click < 500 and if_click_in_range:
+        if if_doubleclick_out_of_range or time_from_last_doubleclick > 500:
+            if if_click_in_range and time_from_last_click < 500:
                 self.mouse_doubleclick(button_name, mouse_pos)
 
                 self.last_press[button_name]['double']['pos'] = mouse_pos
@@ -80,6 +87,10 @@ glo (int): Frame''')
         if self.dragged_widget is not None:
             self.dragged_widget.move(movement)
 
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#                                                       WIDGETS
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     def draw(self, mode=mgl.TRIANGLE_STRIP):
-        for i in range(len(self.widgets)-1, -1, -1):
+        for i in range(len(self.widgets) - 1, -1, -1):
             self.widgets[i].draw(mode)
