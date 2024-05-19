@@ -22,7 +22,7 @@ class Window:
         self.ctx.enable(mgl.BLEND)
 
         # WINDOW PARAMETERS
-        self.fps = 60
+        self.fps = -1
         self.size = size
 
         # OTHER ATTRIBUTES
@@ -43,8 +43,6 @@ class Window:
 
             self.draw()
             # print(self.summ // 100)
-
-            self.gui.widgets[0].size = ((1000), (1000))
 
             self.summ -= fps_buffer.pop(0)
             x = self.clock.get_fps()

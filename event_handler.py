@@ -19,6 +19,8 @@ class EventHandler:
             if event.type == pg.VIDEORESIZE:
                 window.size = pg.display.get_window_size()
 
+                window.ctx.viewport = (0, 0) + window.size
+
                 for widget in gui.widgets:
                     widget.update_vertices()
 
@@ -32,7 +34,15 @@ class EventHandler:
 
             elif event.type == pg.KEYDOWN:
                 if event.dict['key'] == pg.K_F5:
-                    gui.frame_counter.line = f'fps: {window.summ // 100}'
+                    gui.widgets[0].line = f'fps: {window.summ // 100}'
+
+                if event.dict['key'] == pg.K_F4:
+                    gui.widgets[0].size = (50, 50)
+
+                if event.dict['key'] == pg.K_F3:
+                    for w in gui.widgets:
+                        w.update_vertices()
+
 
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #                                                        MOUSE

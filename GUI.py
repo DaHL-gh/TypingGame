@@ -25,14 +25,11 @@ class GUI:
         self.font = text_renderer.Font(name='CascadiaMono', char_size=10)
 
         self.widgets = LinkedList()
-        x = ('''Context.detect_framebuffer() Detect a framebuffer.
-This is already done when creating a context, but if the underlying window library for some changes the default
-framebuffer during the lifetime of the application this might be necessary.
-Args: glo (int): Frame''')
+        x = ('''W or L''')
         self.frame_counter = text_renderer.Renderer(self.ctx, self.font, line='fps: ', pos=(0, 0), size=(100, 100))
         self.widgets.append(self.frame_counter)
 
-        self.widgets.append(text_renderer.Renderer(self.ctx, self.font, line=x, pos=(0, 0), size=(200, 150)))
+        self.widgets.append(text_renderer.Renderer(self.ctx, self.font, line=x, pos=(0, 0), size=(100, 100)))
 
         widget = Widget(self.ctx, pos=(500, 300), size=(200, 200), color=(0.5, 0, 1))
         self.widgets.append(widget)

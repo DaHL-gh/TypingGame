@@ -87,7 +87,7 @@ class Renderer:
         self.ctx = ctx
         self.font = font
 
-        # FOR CHAR POSITIONS
+        # FOR CHARS
         self.max_vertical_advance = 0
         self.pen = [0, 0]
 
@@ -111,9 +111,8 @@ class Renderer:
                                              (self.uv, '2f /v', 'in_bitmap_cords'),
                                          ])
 
-        # PROPERTIES
+        self._pos = pos
         self.size = size
-        self.pos = pos
         self.line = line
 
     @property
@@ -138,6 +137,7 @@ class Renderer:
             self.chars.append(Char(self.ctx, glyph, self.program, self.bitmap_textures[char]))
 
         self._update_char_pos()
+        self._redraw()
 
     @property
     def pos(self):
@@ -157,10 +157,18 @@ class Renderer:
     def size(self, size: tuple[int, int]):
         self._size = size
 
-        self.framebuffer.release()
-        self.framebuffer = self.ctx.framebuffer(self.ctx.texture(size=self.size, components=4))
+        self.vertices.write(get_rect_vertices(pg.display.get_window_size(), self.size, self.pos))
 
+        self._update_framebuffer()
         self._update_char_pos()
+        self._redraw()
+
+    def _update_framebuffer(self):
+        self.texture.release()
+        self.texture = self.ctx.texture(size=self.size, components=4, data=None)
+
+        self.framebuffer.release()
+        self.framebuffer = self.ctx.framebuffer(self.texture)
 
     def _update_char_pos(self):
         self.framebuffer.use()
@@ -177,17 +185,19 @@ class Renderer:
 
             self.pen[0] += char.glyph.horizontal_advance
 
+        self.ctx.screen.use()
+
+    def _redraw(self):
+        self.framebuffer.use()
         self.framebuffer.clear()
 
         for char in self.chars:
             char.draw(mgl.TRIANGLE_STRIP)
 
-        self.texture.release()
-        self.texture = self.ctx.texture(size=self.size, components=4, data=self.framebuffer.read(components=4))
-
         self.ctx.screen.use()
 
     def draw(self, mode=mgl.TRIANGLE_STRIP):
+        self.ctx.screen.use()
         self.texture.use()
         self.vao.render(mode)
 
@@ -206,9 +216,6 @@ class Renderer:
 
     def contains_dot(self, cords: list[int | float, int | float] | tuple[int | float, int | float]) -> bool:
         return all(0 < cords[i] - self.pos[i] < self.size[i] for i in (0, 1))
-
-    def drag(self, mouse_pos):
-        self.pos = mouse_pos
 
     def move(self, offset: list[int | float, int | float] | tuple[int | float, int | float]) -> None:
         self.pos = tuple(int(self.pos[i] + offset[i]) for i in (0, 1))
