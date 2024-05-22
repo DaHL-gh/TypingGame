@@ -2,6 +2,10 @@ import numpy as np
 import pygame as pg
 import moderngl as mgl
 
+from .settings import BASE_DIR
+
+print(BASE_DIR)
+
 
 def convert_vec2(w_size: tuple[int, int], vec2: tuple[int, int]) -> np.ndarray:
 
@@ -25,10 +29,10 @@ def get_rect_vertices(fb_size, rect_size, rect_pos) -> np.ndarray:
 
 
 def load_program(ctx: mgl.Context, shader_name: str) -> mgl.Program:
-    with open(f"shaders/{shader_name}.vert") as file:
+    with open(f"{BASE_DIR}/data/shaders/{shader_name}.vert") as file:
         vertex_shader = file.read()
 
-    with open(f"shaders/{shader_name}.frag") as file:
+    with open(f"{BASE_DIR}/data/shaders/{shader_name}.frag") as file:
         fragment_shader = file.read()
 
     program = ctx.program(vertex_shader=vertex_shader, fragment_shader=fragment_shader)

@@ -1,15 +1,14 @@
-import random
-
 import pygame as pg
 import moderngl as mgl
 from structlinks.LinkedList import LinkedList
 
-from gui import GUI
-from event_handler import EventHandler
+from src.interface.gui import GUI
+from src.logic.event_handler import EventHandler
+from src.settings import W_SIZE, FPS
 
 
 class Window:
-    def __init__(self, size=(1000, 600)):
+    def __init__(self, size=(1000, 600), fps=60):
 
         # SETTING PYGAME TO WORK WITH OPENGL
         self.display = pg.display.set_mode(size, flags=pg.OPENGL | pg.DOUBLEBUF | pg.RESIZABLE)
@@ -22,7 +21,7 @@ class Window:
         self.ctx.enable(mgl.BLEND)
 
         # WINDOW PARAMETERS
-        self.fps = -1
+        self.fps = fps
         self.size = size
 
         # OTHER ATTRIBUTES
@@ -54,8 +53,12 @@ class Window:
             self.clock.tick(self.fps)
 
 
-if __name__ == '__main__':
+def main():
     pg.init()
 
-    w = Window()
+    w = Window(W_SIZE, FPS)
     w.run()
+
+
+if __name__ == '__main__':
+    main()

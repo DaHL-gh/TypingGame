@@ -40,8 +40,7 @@ class EventHandler:
                     gui.widgets[0].size = (50, 50)
 
                 if event.dict['key'] == pg.K_F3:
-                    for w in gui.widgets:
-                        w.update_vertices()
+                    gui.widgets[0].pos = pg.mouse.get_pos()
 
 
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
