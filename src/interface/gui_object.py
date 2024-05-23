@@ -33,6 +33,8 @@ class GUIObject:
         self._pos = pos
         self.update_vertices()
 
+# /////////////////////////////////////////////////////PROPERTIES///////////////////////////////////////////////////////
+
     @property
     def ctx(self):
         return self._ctx
@@ -73,6 +75,8 @@ class GUIObject:
     def height(self):
         return self._size[1]
 
+# ////////////////////////////////////////////////////// SMTNG /////////////////////////////////////////////////////////
+
     def update_vertices(self):
         self._vertices.write(get_rect_vertices(fb_size=self.ctx.fbo.viewport[2:],
                                                rect_size=self.size,
@@ -84,18 +88,24 @@ class GUIObject:
     def move(self, movement):
         self.pos = tuple(self.pos[i] + movement[i] for i in (0, 1))
 
-    def mouse_down(self, button_name, mouse_pos):
-        pass
+# ////////////////////////////////////////////////////// MOUSE /////////////////////////////////////////////////////////
 
-    def mouse_up(self, button_name, mouse_pos):
-        pass
+    def mouse_down(self, button_name, mouse_pos) -> bool:
+        return False
 
-    def mouse_double(self, button_name, mouse_pos):
-        pass
+    def mouse_up(self, button_name, mouse_pos) -> bool:
+        return False
+
+    def mouse_double(self, button_name, mouse_pos) -> bool:
+        return False
+
+# ///////////////////////////////////////////////////// DISPLAY ////////////////////////////////////////////////////////
 
     def draw(self) -> None:
         self._texture.use()
         self._vao.render(mgl.TRIANGLE_STRIP)
+
+# ///////////////////////////////////////////////////// RELEASE ////////////////////////////////////////////////////////
 
     def release(self):
         self._vertices.release()
@@ -129,6 +139,34 @@ class GUILayout(GUIObject):
     def update_layout(self):
         pass
 
+# ////////////////////////////////////////////////////// MOUSE /////////////////////////////////////////////////////////
+
+    def mouse_down(self, button_name, mouse_pos) -> bool:
+        for widget in self.widgets:
+            if widget.cords_in_rect(mouse_pos):
+                if widget.mouse_down(button_name, mouse_pos):
+                    return True
+        return False
+
+    def mouse_up(self, button_name, mouse_pos) -> bool:
+        for widget in self.widgets:
+            if widget.cords_in_rect(mouse_pos):
+                if widget.mouse_up(button_name, mouse_pos):
+                    return True
+        return False
+
+    def mouse_double(self, button_name, mouse_pos):
+        adjusted_pos = tuple(mouse_pos[i] - self.pos[i] for i in (0, 1))
+
+        for widget in self.widgets:
+            if widget.cords_in_rect(adjusted_pos):
+                if widget.mouse_double(button_name, adjusted_pos):
+                    return True
+
+        return False
+
+# ///////////////////////////////////////////////////// DISPLAY ////////////////////////////////////////////////////////
+
     def _redraw(self):
         self._framebuffer.use()
         self._framebuffer.clear()
@@ -143,6 +181,8 @@ class GUILayout(GUIObject):
     def draw(self):
         self._mem_texture.use()
         self._vao.render(mgl.TRIANGLE_STRIP)
+
+# ///////////////////////////////////////////////////// RELEASE ////////////////////////////////////////////////////////
 
     def _release_widgets(self):
         for widget in self.widgets:

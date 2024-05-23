@@ -4,8 +4,6 @@ import moderngl as mgl
 
 from .settings import BASE_DIR
 
-print(BASE_DIR)
-
 
 def convert_vec2(w_size: tuple[int, int], vec2: tuple[int, int]) -> np.ndarray:
 

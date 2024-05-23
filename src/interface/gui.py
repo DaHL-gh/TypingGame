@@ -74,7 +74,6 @@ class GUI:
         self.dragged_widget = None
 
     def mouse_doubleclick(self, button_name, mouse_pos):
-
         for widget in self.widgets:
             if widget.cords_in_rect(mouse_pos):
                 widget.mouse_double(button_name, mouse_pos)
