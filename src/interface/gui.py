@@ -17,16 +17,17 @@ class GUI:
         self.ctx = window.ctx
 
         # MOUSE
-        self.dragged_widget = None
+        self.drag_info = None
         self.last_press = dict((key, dict((key, {'pos': (0, 0), 'time': 0}) for key in ('single', 'double')))
                                for key in self.mouse_data.values())
+
+        self.last_press = {'b_name': '', 'pos': (0, 0), 'time': 0, 'count': 0}
 
         # WIDGETS
         self.font = Font(name='WillowHead', char_size=100)
         self.widget_program = load_program(self.ctx, 'textured_box')
 
         self.widgets = LinkedList()
-        x = ('''W or L''')
         self.frame_counter = TextField(self.ctx, (1000, 300), 'text', self.font, self.widget_program)
         self.widgets.append(self.frame_counter)
 
@@ -40,62 +41,63 @@ class GUI:
     def mouse_down(self, button_name, mouse_pos):
         current_time = pg.time.get_ticks()
 
-        time_from_last_doubleclick = current_time - self.last_press[button_name]['double']['time']
-        if_doubleclick_out_of_range = any(
-            abs(self.last_press[button_name]['double']['pos'][i] - mouse_pos[i]) > 2 for i in (0, 1))
+        if self.last_press['b_name'] == button_name:
+            time_from_last_click = current_time - self.last_press['time']
+            if_click_in_range = any(abs(self.last_press['pos'][i] - mouse_pos[i]) < 2 for i in (0, 1))
 
-        time_from_last_click = current_time - self.last_press[button_name]['single']['time']
-        if_click_in_range = any(
-            abs(self.last_press[button_name]['single']['pos'][i] - mouse_pos[i]) < 2 for i in (0, 1))
-
-        # SINGLE CLICK
-        self.last_press[button_name]['single']['pos'] = mouse_pos
-        self.last_press[button_name]['single']['time'] = current_time
-
-        # DOUBLE CLICK
-        if if_doubleclick_out_of_range or time_from_last_doubleclick > 500:
             if if_click_in_range and time_from_last_click < 500:
-                self.mouse_doubleclick(button_name, mouse_pos)
+                self.last_press['count'] += 1
+            else:
+                self.last_press['count'] = 1
 
-                self.last_press[button_name]['double']['pos'] = mouse_pos
-                self.last_press[button_name]['double']['time'] = current_time
+        else:
+            self.last_press['b_name'] = button_name
+            self.last_press['count'] = 1
 
-                return
+        self.last_press['time'] = current_time
+        self.last_press['pos'] = mouse_pos
 
         for widget in self.widgets:
             if widget.cords_in_rect(mouse_pos):
-                widget.mouse_down(button_name, mouse_pos)
+                widget.mouse_down(button_name, mouse_pos, self.last_press['count'])
 
     def mouse_up(self, button_name, mouse_pos):
         for widget in self.widgets:
             if widget.cords_in_rect(mouse_pos):
                 widget.mouse_up(button_name, mouse_pos)
 
-        self.dragged_widget = None
+        if self.drag_info is not None and self.drag_info['b_name'] == button_name:
+            self.drag_info = None
 
-    def mouse_doubleclick(self, button_name, mouse_pos):
-        for widget in self.widgets:
-            if widget.cords_in_rect(mouse_pos):
-                widget.mouse_double(button_name, mouse_pos)
+    def mouse_motion(self, pressed_buttons, mouse_pos, rel):
+        if_click_out_of_range = any(abs(self.last_press['pos'][i] - mouse_pos[i]) > 2 for i in (0, 1))
 
-    def mouse_motion(self, pressed_buttons, mouse_pos, movement):
-        if_click_out_of_range = any(abs(self.last_press['left']['single']['pos'][i] - mouse_pos[i]) > 2 for i in (0, 1))
+        pressed_buttons = set(self.mouse_data[i + 1] if pressed_buttons[i] else '' for i in range(3))
 
         # DRAGGING
-        if pressed_buttons[0] and self.dragged_widget is None and if_click_out_of_range:
+        if self.drag_info is not None:
+            self.drag_info['widget'].mouse_drag(self.drag_info['b_name'], mouse_pos, rel)
+
+        elif if_click_out_of_range and self.last_press['b_name'] in pressed_buttons:
             for i in range(len(self.widgets)):
-                if self.widgets[i].cords_in_rect(self.last_press['left']['single']['pos']):
-                    self.dragged_widget = self.widgets[i]
+                w = self.widgets[i]
+                if w.cords_in_rect(self.last_press['pos']):
+                    self.drag_info = {'b_name': self.last_press['b_name'], 'widget': w}
                     self.widgets.pop(i)
-                    self.widgets.insert(0, self.dragged_widget)
+                    self.widgets.insert(0, w)
+
+                    w.mouse_drag(self.last_press['b_name'], mouse_pos, rel)
+
                     break
 
-        if self.dragged_widget is not None:
-            self.dragged_widget.move(movement)
+
 
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #                                                       WIDGETS
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    def add_widget(self, widget):
+        pass
 
     def draw(self):
         for i in range(len(self.widgets) - 1, -1, -1):

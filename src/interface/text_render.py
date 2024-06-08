@@ -119,3 +119,6 @@ class TextField(GUILayout):
             self.pen[0] += char.glyph.horizontal_advance
 
         self.ctx.screen.use()
+
+    def mouse_drag(self, button_name, mouse_pos, rel):
+        self.size = tuple(rel[i] + self.size[i] for i in (0, 1))

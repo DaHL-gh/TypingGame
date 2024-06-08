@@ -4,6 +4,8 @@ import pygame as pg
 
 from ..functions import load_program, get_rect_vertices
 
+from abc import ABC, abstractmethod
+
 
 class GUIObject:
     def __init__(self,
@@ -52,8 +54,8 @@ class GUIObject:
         return self._pos
 
     @pos.setter
-    def pos(self, pos: tuple[int, int]):
-        self._pos = pos
+    def pos(self, value: tuple[int, int]):
+        self._pos = value
 
         self.update_vertices()
 
@@ -62,8 +64,8 @@ class GUIObject:
         return self._size
 
     @size.setter
-    def size(self, size: tuple[int, int]):
-        self._size = size
+    def size(self, value: tuple[int, int]):
+        self._size = value
 
         self.update_vertices()
 
@@ -90,13 +92,13 @@ class GUIObject:
 
 # ////////////////////////////////////////////////////// MOUSE /////////////////////////////////////////////////////////
 
-    def mouse_down(self, button_name, mouse_pos) -> bool:
+    def mouse_down(self, button_name, mouse_pos, count) -> bool:
         return False
 
     def mouse_up(self, button_name, mouse_pos) -> bool:
         return False
 
-    def mouse_double(self, button_name, mouse_pos) -> bool:
+    def mouse_drag(self, button_name, mouse_pos, rel):
         return False
 
 # ///////////////////////////////////////////////////// DISPLAY ////////////////////////////////////////////////////////
@@ -114,7 +116,7 @@ class GUIObject:
         self._vao.release()
 
 
-class GUILayout(GUIObject):
+class GUILayout(GUIObject, ABC):
     def __init__(self, ctx: mgl.Context,
                  size: tuple[int, int],
                  pos: tuple[int, int],
@@ -136,16 +138,27 @@ class GUILayout(GUIObject):
         self._framebuffer.release()
         self._framebuffer = self.ctx.framebuffer(self._mem_texture)
 
+    @abstractmethod
     def update_layout(self):
         pass
 
+    @GUIObject.size.setter
+    def size(self, value: tuple[int, int]):
+
+        GUIObject.size.fset(self, value)
+
+        self.update_framebuffer()
+        self.update_layout()
+        self._redraw()
+
 # ////////////////////////////////////////////////////// MOUSE /////////////////////////////////////////////////////////
 
-    def mouse_down(self, button_name, mouse_pos) -> bool:
+    def mouse_down(self, button_name, mouse_pos, count) -> bool:
         for widget in self.widgets:
             if widget.cords_in_rect(mouse_pos):
-                if widget.mouse_down(button_name, mouse_pos):
+                if widget.mouse_down(button_name, mouse_pos, count):
                     return True
+
         return False
 
     def mouse_up(self, button_name, mouse_pos) -> bool:
@@ -153,14 +166,13 @@ class GUILayout(GUIObject):
             if widget.cords_in_rect(mouse_pos):
                 if widget.mouse_up(button_name, mouse_pos):
                     return True
+
         return False
 
-    def mouse_double(self, button_name, mouse_pos):
-        adjusted_pos = tuple(mouse_pos[i] - self.pos[i] for i in (0, 1))
-
+    def mouse_drag(self, button_name, mouse_pos, rel):
         for widget in self.widgets:
-            if widget.cords_in_rect(adjusted_pos):
-                if widget.mouse_double(button_name, adjusted_pos):
+            if widget.cords_in_rect(mouse_pos):
+                if widget.mouse_drag(button_name, mouse_pos, rel):
                     return True
 
         return False
