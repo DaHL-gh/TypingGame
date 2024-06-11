@@ -1,8 +1,11 @@
+import glm
 import moderngl as mgl
 import numpy as np
 import pygame as pg
+from structlinks.LinkedList import LinkedList
 
-from ..functions import load_program, get_rect_vertices
+from .mglmanagers import ProgramManager
+from ..functions import get_rect_vertices
 
 from abc import ABC, abstractmethod
 
@@ -12,8 +15,12 @@ class GUIObject:
                  ctx: mgl.Context,
                  size: tuple[int, int],
                  pos: tuple[int, int],
-                 texture: mgl.Texture,
-                 program: mgl.Program):
+                 program: mgl.Program,
+                 texture: mgl.Texture | None = None):
+
+        if texture is None:
+            texture = ctx.texture(size=size, components=1)
+
         self._ctx = ctx
 
         # MGL ATTRIBUTES
@@ -24,16 +31,25 @@ class GUIObject:
 
         self._program = program
 
-        self._vao = self.ctx.vertex_array(self._program,
+        self._get_vao()
+
+        self._bbox_vao = self.ctx.vertex_array(ProgramManager(self.ctx).get_program('bbox_outline'),
                                           [
                                               (self._vertices, '2f /v', 'in_position'),
-                                              (self._uv, '2f /v', 'in_texture_cords'),
+                                              (self._uv, '2f /v', 'in_texture_cords')
                                           ])
 
         # FORM
         self._size = size
         self._pos = pos
         self.update_vertices()
+
+    def _get_vao(self):
+        self._vao = self.ctx.vertex_array(self._program,
+                                          [
+                                              (self._vertices, '2f /v', 'in_position'),
+                                              (self._uv, '2f /v', 'in_texture_cords')
+                                          ])
 
 # /////////////////////////////////////////////////////PROPERTIES///////////////////////////////////////////////////////
 
@@ -107,6 +123,9 @@ class GUIObject:
         self._texture.use()
         self._vao.render(mgl.TRIANGLE_STRIP)
 
+        self._bbox_vao.program['w_size'].write(glm.vec2(self.size))
+        self._bbox_vao.render(mgl.TRIANGLE_STRIP)
+
 # ///////////////////////////////////////////////////// RELEASE ////////////////////////////////////////////////////////
 
     def release(self):
@@ -120,16 +139,14 @@ class GUILayout(GUIObject, ABC):
     def __init__(self, ctx: mgl.Context,
                  size: tuple[int, int],
                  pos: tuple[int, int],
-                 texture: mgl.Texture,
-                 program: mgl.Program):
-        super().__init__(ctx=ctx, size=size, pos=pos, texture=texture, program=program)
-
-        self._background = GUIObject(self.ctx, self.size, (0, 0), self.texture, self.program)
+                 program: mgl.Program,
+                 texture: mgl.Texture | None = None):
+        super().__init__(ctx=ctx, size=size, pos=pos, program=program, texture=texture)
 
         self._mem_texture = self.ctx.texture(size=self.size, components=4)
         self._framebuffer = ctx.framebuffer(self._mem_texture)
 
-        self.widgets = []
+        self.widgets = LinkedList()
 
     def update_framebuffer(self):
         self._mem_texture.release()
@@ -189,8 +206,6 @@ class GUILayout(GUIObject, ABC):
         self._framebuffer.use()
         self._framebuffer.clear()
 
-        self._background.draw()
-
         for widget in self.widgets:
             widget.draw()
 
@@ -215,6 +230,4 @@ class GUILayout(GUIObject, ABC):
 
         self._mem_texture.release()
         self._framebuffer.release()
-
-        self._background.release()
         self._release_widgets()
