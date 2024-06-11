@@ -38,6 +38,7 @@ class Window:
 
         while True:
             self.ctx.clear()
+            self.gui.size = self.gui.size
             self.event_handler.handle_events()
 
             self.draw()

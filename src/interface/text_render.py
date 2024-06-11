@@ -1,15 +1,17 @@
 import moderngl as mgl
 import freetype as ft
 import numpy as np
+import glm
 
-from ..functions import load_program
+from .mglmanagers import ProgramManager
 from .gui_object import GUIObject, GUILayout
 from ..settings import MONITOR_DPI, BASE_DIR
 
 
 class Glyph:
     def __init__(self, code: int, face: ft.Face):
-        face.load_char(chr(code))
+        self.symbol = chr(code)
+        face.load_char(self.symbol)
 
         ft_glyph = face.glyph
         self.bitmap = np.array(ft_glyph.bitmap.buffer, dtype='u1')
@@ -44,13 +46,32 @@ class Char(GUIObject):
     def __init__(self,
                  ctx: mgl.Context,
                  glyph: Glyph,
-                 program: mgl.Program,
                  texture: mgl.Texture,
-                 pos: tuple[int, int] = (0, 0)):
+                 pos: tuple[int, int] = (0, 0),
+                 color: tuple[float, float, float] = (1, 1, 1)):
+        self._color = color
+        self._color_buffer = ctx.buffer(glm.vec3(self._color))
 
         self.glyph = glyph
-        super().__init__(ctx, self.glyph.size, pos, texture, program)
+        super().__init__(ctx, self.glyph.size, pos, ProgramManager(ctx).get_program('text_render'), texture)
         self.texture.filter = (mgl.NEAREST, mgl.NEAREST)
+
+    def _get_vao(self):
+        self._vao = self.ctx.vertex_array(self._program,
+                                          [
+                                              (self._vertices, '2f /v', 'in_position'),
+                                              (self._uv, '2f /v', 'in_texture_cords'),
+                                              (self._color_buffer, '3f /i', 'in_color')
+                                          ])
+
+    @property
+    def color(self):
+        return self._color
+
+    @color.setter
+    def color(self, value: tuple[float, float, float]):
+        self._color = value
+        self._color_buffer.write(glm.vec3(self._color))
 
 
 class TextField(GUILayout):
@@ -60,20 +81,15 @@ class TextField(GUILayout):
                  line: str,
                  font: Font,
                  program: mgl.Program,
-                 texture: mgl.Texture = None,
+                 texture: mgl.Texture | None = None,
                  pos: tuple[int, int] = (0, 0)):
 
-        if texture is None:
-            texture = ctx.texture(size=size, components=1)
-
-        super().__init__(ctx, size, pos, texture, program)
+        super().__init__(ctx, size, pos, program, texture)
 
         self.pen = (0, 0)
         self.max_vertical_advance = 0
 
         self._font = font
-
-        self._char_program = load_program(self.ctx, 'text_render')
 
         self._bitmap_textures = {}
 
@@ -98,7 +114,7 @@ class TextField(GUILayout):
                 self._bitmap_textures[char] = self.ctx.texture(size=glyph.size, data=glyph.bitmap, components=1)
                 self._bitmap_textures[char].filter = (mgl.NEAREST, mgl.NEAREST)
 
-            self.widgets.append(Char(self.ctx, glyph, self._char_program, self._bitmap_textures[char]))
+            self.widgets.append(Char(self.ctx, glyph, self._bitmap_textures[char]))
 
         self.update_layout()
         self._redraw()
@@ -121,4 +137,7 @@ class TextField(GUILayout):
         self.ctx.screen.use()
 
     def mouse_drag(self, button_name, mouse_pos, rel):
-        self.size = tuple(rel[i] + self.size[i] for i in (0, 1))
+        if button_name == 'left':
+            self.pos = tuple(self.pos[i] + rel[i] for i in (0, 1))
+        elif button_name == 'right':
+            self.size = tuple(self.size[i] + rel[i] for i in (0, 1))
