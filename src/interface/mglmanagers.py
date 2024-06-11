@@ -1,7 +1,9 @@
-from moderngl import Context, Texture, Program
+from moderngl import Context, Texture, Program, Buffer
+import pygame as pg
 from typing import Hashable
 
 from ..functions import load_program
+from ..settings import BASE_DIR
 
 
 class KWSingleton:
@@ -14,43 +16,79 @@ class KWSingleton:
         return cls._instances[key]
 
 
-class TextureManager(KWSingleton):
-    def __init__(self, key: Context):
-        self.ctx = key
+class TextureManager:
+    _instances = {}
 
-        self.textures: dict[Hashable, Texture] = {}
+    def __new__(cls, ctx: Context, *args, **kwargs):
+        if ctx not in cls._instances:
+            cls._instances[ctx] = super(TextureManager, cls).__new__(cls)
 
-    def add_texture(self, key, texture: Texture) -> None:
-        self.textures[key] = texture
+            cls.ctx = ctx
+            cls.textures: dict[str, Texture] = {}
 
-    def get_texture(self, key) -> Texture:
-        if key in self.textures:
-            return self.textures[key]
-        else:
-            raise KeyError(f'No such texture in this context: {self.ctx}')
+        return cls._instances[ctx]
 
-    def release_texture(self, key) -> None:
-        if key in self.textures:
-            return self.textures.pop(key).release()
+    def get_texture(self, name: str) -> Texture:
+        if name not in self.textures:
+            img = pg.image.load(f'{BASE_DIR}\\data\\textures\\{name}')
+            data = pg.image.tobytes(img, 'RGBA')
+
+            self.textures[name] = self.ctx.texture(size=img.get_size(), components=4, data=data)
+
+        return self.textures[name]
+
+    def release_texture(self, name) -> None:
+        if name in self.textures:
+            return self.textures.pop(name).release()
         else:
             print('Warning: tried to release non-existent texture')
 
 
-class ProgramManager(KWSingleton):
-    def __init__(self, key: Context):
-        self.ctx = key
+class ProgramManager:
+    _instances = {}
 
-        self.programs: dict[str, Program] = {}
+    def __new__(cls, ctx: Context, *args, **kwargs):
+        if ctx not in cls._instances:
+            cls._instances[ctx] = super(ProgramManager, cls).__new__(cls)
 
-    def get_program(self, key: str) -> Program:
-        if key not in self.programs:
-            self.programs[key] = load_program(self.ctx, key)
+            cls.ctx = ctx
+            cls.programs: dict[str, Program] = {}
 
-        return self.programs[key]
+        return cls._instances[ctx]
 
-    def release_program(self, key) -> None:
-        if key in self.programs:
-            return self.programs.pop(key).release()
+    def get_program(self, name: str) -> Program:
+        if name not in self.programs:
+            self.programs[name] = load_program(self.ctx, name)
+
+        return self.programs[name]
+
+    def release_program(self, name) -> None:
+        if name in self.programs:
+            return self.programs.pop(name).release()
         else:
             print('Warning: tried to release non-existent program')
 
+
+class BufferManager:
+    _instances = {}
+
+    def __new__(cls, ctx: Context, *args, **kwargs):
+        if ctx not in cls._instances:
+            cls._instances[ctx] = super(BufferManager, cls).__new__(cls)
+
+            cls.ctx = ctx
+            cls.buffers: dict[str, Buffer] = {}
+
+        return cls._instances[ctx]
+
+    def get_program(self, name: str, buffer: Buffer) -> Buffer:
+        if name not in self.buffers:
+            self.buffers[name] = buffer
+
+        return self.buffers[name]
+
+    def release_program(self, name) -> None:
+        if name in self.buffers:
+            return self.buffers.pop(name).release()
+        else:
+            print('Warning: tried to release non-existent buffer')
