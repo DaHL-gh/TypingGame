@@ -20,17 +20,17 @@ def get_rect_vertices(fb_size, rect_size, rect_pos) -> np.ndarray:
     for x in (0, rect_size[0]):
         for y in (0, rect_size[1]):
             arr[i][0] = (rect_pos[0] + x) * 2 / fb_size[0] - 1
-            arr[i][1] = 1 - (rect_pos[1] + y) * 2 / fb_size[1]
+            arr[i][1] = (rect_pos[1] + y) * 2 / fb_size[1] - 1
             i += 1
 
     return arr
 
 
 def load_program(ctx: mgl.Context, shader_name: str) -> mgl.Program:
-    with open(f"{BASE_DIR}/data/shaders/{shader_name}.vert") as file:
+    with open(f"{BASE_DIR}\\data\\shaders\\{shader_name}.vert") as file:
         vertex_shader = file.read()
 
-    with open(f"{BASE_DIR}/data/shaders/{shader_name}.frag") as file:
+    with open(f"{BASE_DIR}\\data\\shaders\\{shader_name}.frag") as file:
         fragment_shader = file.read()
 
     program = ctx.program(vertex_shader=vertex_shader, fragment_shader=fragment_shader)
