@@ -154,6 +154,8 @@ class GUILayout(GUIObject, ABC):
 # ////////////////////////////////////////////////////// MOUSE /////////////////////////////////////////////////////////
 
     def mouse_down(self, button_name, mouse_pos, count) -> bool:
+        mouse_pos = tuple(mouse_pos[i] - self.pos[i] for i in (0, 1))
+
         for widget in self.widgets:
             if widget.cords_in_rect(mouse_pos):
                 if widget.mouse_down(button_name, mouse_pos, count):
@@ -162,6 +164,8 @@ class GUILayout(GUIObject, ABC):
         return False
 
     def mouse_up(self, button_name, mouse_pos) -> bool:
+        mouse_pos = tuple(mouse_pos[i] - self.pos[i] for i in (0, 1))
+
         for widget in self.widgets:
             if widget.cords_in_rect(mouse_pos):
                 if widget.mouse_up(button_name, mouse_pos):
@@ -170,6 +174,8 @@ class GUILayout(GUIObject, ABC):
         return False
 
     def mouse_drag(self, button_name, mouse_pos, rel):
+        mouse_pos = tuple(mouse_pos[i] - self.pos[i] for i in (0, 1))
+
         for widget in self.widgets:
             if widget.cords_in_rect(mouse_pos):
                 if widget.mouse_drag(button_name, mouse_pos, rel):
@@ -191,6 +197,8 @@ class GUILayout(GUIObject, ABC):
         self.ctx.screen.use()
 
     def draw(self):
+        super().draw()
+
         self._mem_texture.use()
         self._vao.render(mgl.TRIANGLE_STRIP)
 
