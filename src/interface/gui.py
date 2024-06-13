@@ -1,4 +1,5 @@
 from __future__ import annotations
+from .types import Child, Parent
 
 import numpy as np
 import moderngl as mgl
@@ -6,7 +7,6 @@ from structlinks.LinkedList import LinkedList
 
 from .mglmanagers import ProgramManager, TextureManager, BufferManager
 from .text_render import TextField, Font
-from .types import Child, Parent
 
 
 class GUI:
@@ -35,10 +35,13 @@ class GUI:
 
         self.font = Font(name='WillowHead', char_size=100)
 
-        self.frame_counter = TextField(self.ctx, (500, 300), 'tehgfhjhghjhfgjkfxt', self.font,
+        self.frame_counter = TextField(self, (500, 300), 'tehgfhjhghjhfgjkfxt', self.font,
                                        ProgramManager(self.ctx).get_program('textured_box'),
                                        TextureManager(self.ctx).get_texture('Chopper.jpg'))
         self.widgets.append(self.frame_counter)
+
+        # DEBUG
+        self._show_bbox = False
 
     # ////////////////////////////////////////////////// PROPERTIES ////////////////////////////////////////////////////
 
@@ -98,6 +101,8 @@ class GUI:
         self._framebuffer.release()
         self._framebuffer = self.ctx.framebuffer(self._mem_texture)
 
+    # ///////////////////////////////////////////////////// DISPLAY ////////////////////////////////////////////////////////
+
     def _redraw(self) -> None:
         self._framebuffer.use()
         self._framebuffer.clear()
@@ -108,8 +113,21 @@ class GUI:
         self.ctx.screen.use()
 
     def draw(self) -> None:
+        self.ctx.screen.use()
+
         self._mem_texture.use()
         self._vao.render(mgl.TRIANGLE_STRIP)
+
+    def toggle_bbox(self, state=None):
+        if state is not None:
+            self._show_bbox = state
+        else:
+            self._show_bbox = not self._show_bbox
+
+        for widget in self.widgets:
+            widget.toggle_bbox(self._show_bbox)
+
+        self._redraw()
 
     # /////////////////////////////////////////////////// RELEASE //////////////////////////////////////////////////////
 

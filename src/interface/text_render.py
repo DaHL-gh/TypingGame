@@ -1,9 +1,12 @@
+from __future__ import annotations
+from .types import Child, Parent
+
 import moderngl as mgl
 import freetype as ft
 import numpy as np
 import glm
 
-from .mglmanagers import ProgramManager
+from .mglmanagers import ProgramManager, BufferManager
 from .gui_object import GUIObject, GUILayout
 from ..settings import MONITOR_DPI, BASE_DIR
 
@@ -44,23 +47,23 @@ class Font:
 
 class Char(GUIObject):
     def __init__(self,
-                 ctx: mgl.Context,
+                 parent: Parent,
                  glyph: Glyph,
                  texture: mgl.Texture,
                  pos: tuple[int, int] = (0, 0),
                  color: tuple[float, float, float] = (1, 1, 1)):
         self._color = color
-        self._color_buffer = ctx.buffer(glm.vec3(self._color))
+        self._color_buffer = parent.ctx.buffer(glm.vec3(self._color))
 
         self.glyph = glyph
-        super().__init__(ctx, self.glyph.size, pos, ProgramManager(ctx).get_program('text_render'), texture)
+        super().__init__(parent, self.glyph.size, pos, ProgramManager(parent.ctx).get_program('text_render'), texture)
         self.texture.filter = (mgl.NEAREST, mgl.NEAREST)
 
     def _get_vao(self):
         self._vao = self.ctx.vertex_array(self._program,
                                           [
                                               (self._vertices, '2f /v', 'in_position'),
-                                              (self._uv, '2f /v', 'in_texture_cords'),
+                                              (BufferManager(self.ctx).get_buffer('UV'), '2f /v', 'in_texture_cords'),
                                               (self._color_buffer, '3f /i', 'in_color')
                                           ])
 
@@ -76,7 +79,7 @@ class Char(GUIObject):
 
 class TextField(GUILayout):
     def __init__(self,
-                 ctx: mgl.Context,
+                 parent: Parent,
                  size: tuple[int, int],
                  line: str,
                  font: Font,
@@ -84,14 +87,14 @@ class TextField(GUILayout):
                  texture: mgl.Texture | None = None,
                  pos: tuple[int, int] = (0, 0)):
 
-        super().__init__(ctx, size, pos, program, texture)
+        super().__init__(parent=parent, size=size, pos=pos, program=program, texture=texture)
 
-        self.pen = (0, 0)
+        self._pen = (0, 0)
         self.max_vertical_advance = 0
 
         self._font = font
 
-        self._bitmap_textures = {}
+        self._bitmap_textures: dict[str: mgl.Texture] = {}
 
         self.line = line
 
@@ -101,7 +104,7 @@ class TextField(GUILayout):
 
     @line.setter
     def line(self, line: str):
-        self._release_widgets()
+        self._release_widgets(keep_texture=True)
 
         self._line = line
         for char in line:
@@ -114,30 +117,41 @@ class TextField(GUILayout):
                 self._bitmap_textures[char] = self.ctx.texture(size=glyph.size, data=glyph.bitmap, components=1)
                 self._bitmap_textures[char].filter = (mgl.NEAREST, mgl.NEAREST)
 
-            self.widgets.append(Char(self.ctx, glyph, self._bitmap_textures[char]))
+            self.widgets.append(Char(self, glyph, self._bitmap_textures[char]))
 
-        self.update_layout()
+        self._update_layout()
         self._redraw()
 
-    def update_layout(self):
+    def _update_layout(self):
         self._framebuffer.use()
 
-        self.pen = [0, self.max_vertical_advance]
+        self._pen = [0, self.max_vertical_advance]
 
         for char in self.widgets:
-            if self.pen[0] + char.glyph.size[0] > self.size[0]:
-                self.pen[0] = 0
-                self.pen[1] += self.max_vertical_advance
+            if self._pen[0] + char.glyph.size[0] > self.size[0]:
+                self._pen[0] = 0
+                self._pen[1] += self.max_vertical_advance
 
-            char.pos = (self.pen[0] + char.glyph.offset[0],
-                        self.pen[1] - char.glyph.offset[1] - char.glyph.size[1])
+            char.pos = (self._pen[0] + char.glyph.offset[0],
+                        self._pen[1] - char.glyph.offset[1] - char.glyph.size[1])
 
-            self.pen[0] += char.glyph.horizontal_advance
+            self._pen[0] += char.glyph.horizontal_advance
 
         self.ctx.screen.use()
 
-    def mouse_drag(self, button_name, mouse_pos, rel):
+    def _mouse_down_func(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
+        return self
+
+    def _mouse_drag_func(self, button_name: str, mouse_pos: tuple[int, int], rel: tuple[int, int]) -> Child | None:
         if button_name == 'left':
             self.pos = tuple(self.pos[i] + rel[i] for i in (0, 1))
         elif button_name == 'right':
             self.size = tuple(self.size[i] + rel[i] for i in (0, 1))
+
+        return self
+
+    def release(self, keep_texture=False):
+        super().release(keep_texture)
+
+        for x in self._bitmap_textures.values():
+            x.release(keep_texture)
