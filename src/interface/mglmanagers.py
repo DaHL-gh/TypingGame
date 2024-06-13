@@ -81,10 +81,17 @@ class BufferManager:
 
         return cls._instances[ctx]
 
-    def get_program(self, name: str, buffer: Buffer) -> Buffer:
-        if name not in self.buffers:
-            self.buffers[name] = buffer
+    def create_buffer(self, name:str, data):
+        self.load_buffer(name, self.ctx.buffer(data))
 
+    def load_buffer(self, name: str, buffer: Buffer):
+        if name in self.buffers:
+            self.buffers[name].release()
+            print(f'Buffer {name} in {self} was replaced')
+
+        self.buffers[name] = buffer
+
+    def get_buffer(self, name: str) -> Buffer:
         return self.buffers[name]
 
     def release_program(self, name) -> None:
