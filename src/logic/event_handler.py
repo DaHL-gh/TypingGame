@@ -1,6 +1,8 @@
 import pygame as pg
 import sys
 
+from .mouse import MouseClick, MouseMove, LastPress, DragInfo
+
 
 class EventHandler:
     mouse_data = {1: 'left', 2: 'middle', 3: 'right'}
@@ -11,7 +13,7 @@ class EventHandler:
         # MOUSE
         self.drag_info = None
 
-        self.last_press = {'b_name': '', 'pos': (0, 0), 'time': 0, 'count': 0, 'widget': None}
+        self.last_press = LastPress()
 
     def handle_events(self):
         window = self.window
@@ -54,47 +56,54 @@ class EventHandler:
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
             elif event.type == pg.MOUSEBUTTONDOWN:
-                if event.dict['button'] in self.mouse_data:
-                    button_name = self.mouse_data[event.dict['button']]
+                mouse_click = MouseClick(event)
 
-                    current_time = pg.time.get_ticks()
+                if mouse_click.b_name is None:
+                    return
 
-                    if self.last_press['b_name'] == button_name:
-                        time_from_last_click = current_time - self.last_press['time']
-                        if_click_in_range = any(abs(self.last_press['pos'][i] - event.dict['pos'][i]) < 2 for i in (0, 1))
+                current_time = pg.time.get_ticks()
 
-                        if if_click_in_range and time_from_last_click < 500:
-                            self.last_press['count'] += 1
-                        else:
-                            self.last_press['count'] = 1
+                if self.last_press.b_name == mouse_click.b_name:
+                    time_from_last_click = current_time - self.last_press.time
+                    if_click_in_range = any(abs(self.last_press.pos[i] - mouse_click.pos[i]) < 2 for i in (0, 1))
 
+                    if if_click_in_range and time_from_last_click < 500:
+                        self.last_press.count += 1
                     else:
-                        self.last_press['b_name'] = button_name
-                        self.last_press['count'] = 1
+                        self.last_press.count = 1
 
-                    self.last_press['time'] = current_time
-                    self.last_press['pos'] = event.dict['pos']
-                    self.last_press['widget'] = gui.mouse_down(button_name, event.dict['pos'], self.last_press['count'])
+                else:
+                    self.last_press.b_name = mouse_click.b_name
+                    self.last_press.count = 1
+
+                self.last_press.time = current_time
+                self.last_press.pos = mouse_click.pos
+                self.last_press.widget = gui.mouse_down(mouse_click.b_name, mouse_click.pos, self.last_press.count)
+
+                print(mouse_click, self.last_press.widget)
 
             elif event.type == pg.MOUSEBUTTONUP:
-                if event.dict['button'] in self.mouse_data:
-                    button_name = self.mouse_data[event.dict['button']]
+                mouse_click = MouseClick(event)
 
-                    gui.mouse_up(button_name, event.dict['pos'])
+                if mouse_click.b_name is None:
+                    return
 
-                    if self.drag_info is not None and self.drag_info['b_name'] == button_name:
-                        self.drag_info = None
-                        self.last_press['widget'] = None
+                gui.mouse_up(mouse_click.b_name, mouse_click.pos)
+
+                # STOP DRAGGING
+                if self.drag_info is not None and self.drag_info.b_name == mouse_click.b_name:
+                    self.drag_info = None
+                    self.last_press.widget = None
 
             elif event.type == pg.MOUSEMOTION:
-                if_click_out_of_range = any(abs(self.last_press['pos'][i] - event.dict['pos'][i]) > 2 for i in (0, 1))
+                mouse_move = MouseMove(event)
+                print(mouse_move)
 
-                pressed_buttons = set(self.mouse_data[i + 1] if event.dict['buttons'][i] else '' for i in range(3))
+                if_click_out_of_range = any(abs(self.last_press.pos[i] - mouse_move.pos[i]) > 2 for i in (0, 1))
 
                 # DRAGGING
-                if self.drag_info is not None and self.drag_info['widget'] is not None:
-                    self.drag_info['widget'].mouse_drag(self.drag_info['b_name'], event.dict['pos'], event.dict['rel'])
+                if self.drag_info is not None and self.drag_info.widget is not None:
+                    self.drag_info.widget.mouse_drag(self.drag_info.b_name, mouse_move.pos, mouse_move.rel)
 
-                elif if_click_out_of_range and self.last_press['b_name'] in pressed_buttons:
-                    self.drag_info = {'b_name': self.last_press['b_name'], 'widget': self.last_press['widget']}
-
+                elif if_click_out_of_range and self.last_press.b_name in mouse_move.buttons:
+                    self.drag_info = DragInfo(self.last_press.b_name, self.last_press.widget)
