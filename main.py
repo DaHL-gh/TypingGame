@@ -19,6 +19,8 @@ class Window:
         # CREATING CONTEXT
         self.ctx = mgl.create_context()
         self.ctx.enable(mgl.BLEND)
+        self.ctx.blend_func = (mgl.SRC_ALPHA, mgl.ONE_MINUS_SRC_ALPHA,
+                               mgl.SRC_ALPHA, mgl.DST_ALPHA)
 
         # WINDOW PARAMETERS
         self.fps = fps
