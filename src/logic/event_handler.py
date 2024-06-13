@@ -10,10 +10,8 @@ class EventHandler:
 
         # MOUSE
         self.drag_info = None
-        self.last_press = dict((key, dict((key, {'pos': (0, 0), 'time': 0}) for key in ('single', 'double')))
-                               for key in self.mouse_data.values())
 
-        self.last_press = {'b_name': '', 'pos': (0, 0), 'time': 0, 'count': 0}
+        self.last_press = {'b_name': '', 'pos': (0, 0), 'time': 0, 'count': 0, 'widget': None}
 
     def handle_events(self):
         window = self.window
@@ -47,8 +45,8 @@ class EventHandler:
                 if event.dict['key'] == pg.K_F4:
                     gui.widgets[0].size = (50, 50)
 
-                if event.dict['key'] == pg.K_F3:
-                    gui.widgets[0].pos = pg.mouse.get_pos()
+                if event.dict['key'] == pg.K_w:
+                    gui.toggle_bbox()
 
 
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -76,21 +74,17 @@ class EventHandler:
 
                     self.last_press['time'] = current_time
                     self.last_press['pos'] = event.dict['pos']
-
-                    for widget in gui.widgets:
-                        if widget.cords_in_rect(event.dict['pos']):
-                            widget.mouse_down(button_name, event.dict['pos'], self.last_press['count'])
+                    self.last_press['widget'] = gui.mouse_down(button_name, event.dict['pos'], self.last_press['count'])
 
             elif event.type == pg.MOUSEBUTTONUP:
                 if event.dict['button'] in self.mouse_data:
                     button_name = self.mouse_data[event.dict['button']]
 
-                    for widget in gui.widgets:
-                        if widget.cords_in_rect(event.dict['pos']):
-                            widget.mouse_up(button_name, event.dict['pos'])
+                    gui.mouse_up(button_name, event.dict['pos'])
 
                     if self.drag_info is not None and self.drag_info['b_name'] == button_name:
                         self.drag_info = None
+                        self.last_press['widget'] = None
 
             elif event.type == pg.MOUSEMOTION:
                 if_click_out_of_range = any(abs(self.last_press['pos'][i] - event.dict['pos'][i]) > 2 for i in (0, 1))
@@ -98,17 +92,9 @@ class EventHandler:
                 pressed_buttons = set(self.mouse_data[i + 1] if event.dict['buttons'][i] else '' for i in range(3))
 
                 # DRAGGING
-                if self.drag_info is not None:
+                if self.drag_info is not None and self.drag_info['widget'] is not None:
                     self.drag_info['widget'].mouse_drag(self.drag_info['b_name'], event.dict['pos'], event.dict['rel'])
 
                 elif if_click_out_of_range and self.last_press['b_name'] in pressed_buttons:
-                    for i in range(len(gui.widgets)):
-                        w = gui.widgets[i]
-                        if w.cords_in_rect(self.last_press['pos']):
-                            self.drag_info = {'b_name': self.last_press['b_name'], 'widget': w}
-                            gui.widgets.pop(i)
-                            gui.widgets.insert(0, w)
+                    self.drag_info = {'b_name': self.last_press['b_name'], 'widget': self.last_press['widget']}
 
-                            w.mouse_drag(self.last_press['b_name'], event.dict['pos'], event.dict['rel'])
-
-                            break
