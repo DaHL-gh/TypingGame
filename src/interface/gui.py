@@ -33,11 +33,10 @@ class GUI:
         # WIDGETS
         self.widgets: LinkedList[Child] = LinkedList()
 
-        self.font = Font(name='WillowHead', char_size=100)
+        self.font = Font(name='Bitter-VariableFont_wght', char_size=50)
 
         self.frame_counter = TextField(self, (500, 300), 'tehgfhjhghjhfgjkfxt', self.font,
-                                       ProgramManager(self.ctx).get_program('textured_box'),
-                                       TextureManager(self.ctx).get_texture('Chopper.jpg'))
+                                       ProgramManager(self.ctx).get_program('textured_box'))
         self.widgets.append(self.frame_counter)
 
         # DEBUG
@@ -101,7 +100,7 @@ class GUI:
         self._framebuffer.release()
         self._framebuffer = self.ctx.framebuffer(self._mem_texture)
 
-    # ///////////////////////////////////////////////////// DISPLAY ////////////////////////////////////////////////////////
+    # /////////////////////////////////////////////////// DISPLAY //////////////////////////////////////////////////////
 
     def _redraw(self) -> None:
         self._framebuffer.use()

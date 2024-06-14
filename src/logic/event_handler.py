@@ -5,14 +5,11 @@ from .mouse import MouseClick, MouseMove, LastPress, DragInfo
 
 
 class EventHandler:
-    mouse_data = {1: 'left', 2: 'middle', 3: 'right'}
-
     def __init__(self, window):
         self.window = window
 
         # MOUSE
-        self.drag_info = None
-
+        self.drag_info = DragInfo()
         self.last_press = LastPress()
 
     def handle_events(self):
@@ -80,8 +77,6 @@ class EventHandler:
                 self.last_press.pos = mouse_click.pos
                 self.last_press.widget = gui.mouse_down(mouse_click.b_name, mouse_click.pos, self.last_press.count)
 
-                print(mouse_click, self.last_press.widget)
-
             elif event.type == pg.MOUSEBUTTONUP:
                 mouse_click = MouseClick(event)
 
@@ -97,7 +92,6 @@ class EventHandler:
 
             elif event.type == pg.MOUSEMOTION:
                 mouse_move = MouseMove(event)
-                print(mouse_move)
 
                 if_click_out_of_range = any(abs(self.last_press.pos[i] - mouse_move.pos[i]) > 2 for i in (0, 1))
 

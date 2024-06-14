@@ -89,10 +89,10 @@ class TextField(GUILayout):
 
         super().__init__(parent=parent, size=size, pos=pos, program=program, texture=texture)
 
-        self._pen = (0, 0)
-        self.max_vertical_advance = 0
-
         self._font = font
+
+        self._pen = (0, 0)
+        self.max_vertical_advance = self._font.char_size * 2
 
         self._bitmap_textures: dict[str: mgl.Texture] = {}
 
@@ -110,9 +110,6 @@ class TextField(GUILayout):
         for char in line:
             glyph = self._font.get_glyph(ord(char))
 
-            if glyph.vertical_advance > self.max_vertical_advance:
-                self.max_vertical_advance = glyph.vertical_advance
-
             if char not in self._bitmap_textures:
                 self._bitmap_textures[char] = self.ctx.texture(size=glyph.size, data=glyph.bitmap, components=1)
                 self._bitmap_textures[char].filter = (mgl.NEAREST, mgl.NEAREST)
@@ -120,7 +117,7 @@ class TextField(GUILayout):
             self.widgets.append(Char(self, glyph, self._bitmap_textures[char]))
 
         self._update_layout()
-        self._redraw()
+        self.redraw()
 
     def _update_layout(self):
         self._framebuffer.use()

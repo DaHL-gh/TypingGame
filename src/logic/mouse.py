@@ -44,5 +44,5 @@ class LastPress:
 
 @dataclass
 class DragInfo:
-    b_name: str
-    widget: Child | None
+    b_name: str = ''
+    widget: Child | None = None

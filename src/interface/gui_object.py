@@ -168,7 +168,7 @@ class GUILayout(GUIObject, ABC):
 
         self.widgets: LinkedList[Child] = LinkedList()
 
-    def update_framebuffer(self) -> None:
+    def _update_framebuffer(self) -> None:
         self._mem_texture.release()
         self._mem_texture = self.ctx.texture(size=self.size, components=4)
 
@@ -184,14 +184,14 @@ class GUILayout(GUIObject, ABC):
 
         GUIObject.size.fset(self, value)
 
-        self.update_framebuffer()
+        self._update_framebuffer()
         self._update_layout()
-        self._redraw()
+        self.redraw()
 
     # //////////////////////////////////////////////////// MOUSE ///////////////////////////////////////////////////////
 
     def mouse_down(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
-        mouse_pos = tuple(mouse_pos[i] - self.pos[i] for i in (0, 1))
+        mouse_pos = (mouse_pos[0] - self.pos[0], mouse_pos[1] - self.pos[1])
 
         for widget in self.widgets:
             if widget.cords_in_rect(mouse_pos):
@@ -201,7 +201,7 @@ class GUILayout(GUIObject, ABC):
         return self._mouse_down_func(button_name, mouse_pos, count)
 
     def mouse_up(self, button_name: str, mouse_pos: tuple[int, int]) -> Child | None:
-        mouse_pos = tuple(mouse_pos[i] - self.pos[i] for i in (0, 1))
+        mouse_pos = (mouse_pos[0] - self.pos[0], mouse_pos[1] - self.pos[1])
 
         for widget in self.widgets:
             if widget.cords_in_rect(mouse_pos):
@@ -212,7 +212,7 @@ class GUILayout(GUIObject, ABC):
 
     # /////////////////////////////////////////////////// DISPLAY //////////////////////////////////////////////////////
 
-    def _redraw(self):
+    def redraw(self):
         self._framebuffer.use()
         self._framebuffer.clear()
 
@@ -233,7 +233,7 @@ class GUILayout(GUIObject, ABC):
         for widget in self.widgets:
             widget.toggle_bbox(self._show_bbox)
 
-        self._redraw()
+        self.redraw()
 
     # /////////////////////////////////////////////////// RELEASE //////////////////////////////////////////////////////
 
