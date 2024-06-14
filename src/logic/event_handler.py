@@ -39,13 +39,19 @@ class EventHandler:
 
             elif event.type == pg.KEYDOWN:
                 if event.dict['key'] == pg.K_F5:
-                    gui.widgets[0].line = f'fps: {window.summ // 100}'
+                    gui._widgets[0].line = f'fps: {window.summ // 100}'
 
-                if event.dict['key'] == pg.K_F4:
-                    gui.widgets[0].size = (50, 50)
+                elif event.dict['key'] == pg.K_F4:
+                    gui._widgets[0].size = (50, 50)
 
-                if event.dict['key'] == pg.K_w:
+                elif event.dict['key'] == pg.K_w:
                     gui.toggle_bbox()
+
+                elif event.dict['key'] == pg.K_BACKSPACE:
+                    self.last_press.widget.remove_last()
+
+                # if self.last_press.widget is not None:
+                #     self.last_press.widget.append_line(event.dict['unicode'])
 
 
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

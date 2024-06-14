@@ -8,18 +8,20 @@ from abc import ABC, abstractmethod
 
 from .mglmanagers import ProgramManager, BufferManager
 from ..functions import get_rect_vertices
+from .constants import *
 
 
 class GUIObject:
     def __init__(self,
                  parent: Parent,
-                 size: tuple[int, int],
-                 pos: tuple[int, int],
-                 program: mgl.Program,
+                 size: tuple[int, int] = (1, 1),
+                 pos: tuple[int, int] = (0, 0),
+                 program: mgl.Program | None = None,
+                 min_size: tuple[int, int] = None,
+                 size_hints: tuple[float | int, float | int] = (NONE, NONE),
                  texture: mgl.Texture | None = None):
 
         self.parent = parent
-        self._ctx = parent.ctx
 
         # MGL ATTRIBUTES
         if texture is None:
@@ -27,7 +29,8 @@ class GUIObject:
         self._texture = texture
 
         self._vertices = self.ctx.buffer(reserve=32)
-
+        if program is None:
+            program = ProgramManager(self.ctx).get_program('textured_box')
         self._program = program
 
         self._get_vao()
@@ -39,11 +42,16 @@ class GUIObject:
                                                ])
 
         # FORM
-        self._size = size
-        self._pos = pos
-        self.update_vertices()
 
-        self._show_bbox = False
+        self._size = size
+        self.min_size = size if min_size is None else min_size
+        self._size_hints = size_hints
+
+        self._pos = pos
+
+        self._update_vertices()
+
+        self._show_bbox = self.parent._show_bbox
 
     def _get_vao(self):
         self._vao = self.ctx.vertex_array(self._program,
@@ -56,7 +64,7 @@ class GUIObject:
 
     @property
     def ctx(self):
-        return self._ctx
+        return self.parent.ctx
 
     @property
     def texture(self):
@@ -67,6 +75,14 @@ class GUIObject:
         return self._program
 
     @property
+    def show_bbox(self):
+        return self._show_bbox
+
+    @show_bbox.setter
+    def show_bbox(self, value: bool):
+        self._show_bbox = value
+
+    @property
     def pos(self):
         return self._pos
 
@@ -74,7 +90,11 @@ class GUIObject:
     def pos(self, value: tuple[int, int]):
         self._pos = value
 
-        self.update_vertices()
+        self._update_vertices()
+
+    @property
+    def size_hints(self):
+        return self._size_hints
 
     @property
     def size(self):
@@ -82,21 +102,32 @@ class GUIObject:
 
     @size.setter
     def size(self, value: tuple[int, int]):
-        self._size = value
+        self._size = tuple(max(value[i], self.min_size[i]) if self.size_hints[i] != FIXED else self._size[i] for i in (0, 1))
 
-        self.update_vertices()
+        self._update_vertices()
 
     @property
     def width(self):
         return self._size[0]
 
+    @width.setter
+    def width(self, value: int):
+        if self.size_hints[0] != FIXED:
+            self._size = (value, self.height)
+
     @property
     def height(self):
         return self._size[1]
 
+    @height.setter
+    def height(self, value):
+        if self.size_hints[1] != FIXED:
+            self._size = (self.width, value)
+
     # //////////////////////////////////////////////////// SMTNG ///////////////////////////////////////////////////////
 
-    def update_vertices(self):
+    def _update_vertices(self):
+        self.parent.framebuffer.use()
         self._vertices.write(get_rect_vertices(fb_size=self.ctx.fbo.viewport[2:],
                                                rect_size=self.size,
                                                rect_pos=self.pos))
@@ -104,8 +135,8 @@ class GUIObject:
     def cords_in_rect(self, cords):
         return all(0 < cords[i] - self.pos[i] < self.size[i] for i in (0, 1))
 
-    def move(self, movement):
-        self.pos = tuple(self.pos[i] + movement[i] for i in (0, 1))
+    def move(self, move):
+        self.pos = (self.pos[0] + move[0], self.pos[1] + move[1])
 
     # //////////////////////////////////////////////////// MOUSE ///////////////////////////////////////////////////////
 
@@ -157,16 +188,20 @@ class GUIObject:
 class GUILayout(GUIObject, ABC):
     def __init__(self,
                  parent: Parent,
-                 size: tuple[int, int],
-                 pos: tuple[int, int],
-                 program: mgl.Program,
+                 size: tuple[int, int] = (1, 1),
+                 pos: tuple[int, int] = (0, 0),
+                 program: mgl.Program | None = None,
+                 min_size: tuple[int, int] = None,
+                 size_hints: tuple[float | int, float | int] = (NONE, NONE),
                  texture: mgl.Texture | None = None):
-        super().__init__(parent=parent, size=size, pos=pos, program=program, texture=texture)
+
+        super().__init__(parent=parent, size=size, pos=pos, program=program,
+                         min_size=min_size, size_hints=size_hints, texture=texture)
 
         self._mem_texture = self.ctx.texture(size=self.size, components=4)
         self._framebuffer = self.ctx.framebuffer(self._mem_texture)
 
-        self.widgets: LinkedList[Child] = LinkedList()
+        self._widgets: LinkedList[Child] = LinkedList()
 
     def _update_framebuffer(self) -> None:
         self._mem_texture.release()
@@ -178,6 +213,10 @@ class GUILayout(GUIObject, ABC):
     @abstractmethod
     def _update_layout(self) -> None:
         pass
+
+    @property
+    def framebuffer(self):
+        return self._framebuffer
 
     @GUIObject.size.setter
     def size(self, value: tuple[int, int]):
@@ -193,7 +232,7 @@ class GUILayout(GUIObject, ABC):
     def mouse_down(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
         mouse_pos = (mouse_pos[0] - self.pos[0], mouse_pos[1] - self.pos[1])
 
-        for widget in self.widgets:
+        for widget in self._widgets:
             if widget.cords_in_rect(mouse_pos):
                 if widget.mouse_down(button_name, mouse_pos, count) is not None:
                     return widget
@@ -202,8 +241,9 @@ class GUILayout(GUIObject, ABC):
 
     def mouse_up(self, button_name: str, mouse_pos: tuple[int, int]) -> Child | None:
         mouse_pos = (mouse_pos[0] - self.pos[0], mouse_pos[1] - self.pos[1])
+        print(self, mouse_pos)
 
-        for widget in self.widgets:
+        for widget in self._widgets:
             if widget.cords_in_rect(mouse_pos):
                 if widget.mouse_up(button_name, mouse_pos) is not None:
                     return widget
@@ -216,10 +256,10 @@ class GUILayout(GUIObject, ABC):
         self._framebuffer.use()
         self._framebuffer.clear()
 
-        for widget in self.widgets:
+        for widget in self._widgets:
             widget.draw()
 
-        self.ctx.screen.use()
+        self.parent.redraw()
 
     def draw(self):
         super().draw()
@@ -230,7 +270,7 @@ class GUILayout(GUIObject, ABC):
     def toggle_bbox(self, state=None):
         super().toggle_bbox(state)
 
-        for widget in self.widgets:
+        for widget in self._widgets:
             widget.toggle_bbox(self._show_bbox)
 
         self.redraw()
@@ -238,10 +278,10 @@ class GUILayout(GUIObject, ABC):
     # /////////////////////////////////////////////////// RELEASE //////////////////////////////////////////////////////
 
     def _release_widgets(self, keep_texture=False):
-        for widget in self.widgets:
+        for widget in self._widgets:
             widget.release(keep_texture)
 
-        self.widgets = LinkedList()
+        self._widgets = LinkedList()
 
     def release(self, keep_texture=False):
         super().release(keep_texture)

@@ -6,7 +6,9 @@ import moderngl as mgl
 from structlinks.LinkedList import LinkedList
 
 from .mglmanagers import ProgramManager, TextureManager, BufferManager
+from .slider import Slider
 from .text_render import TextField, Font
+from .layout import LineLayout
 
 
 class GUI:
@@ -30,23 +32,37 @@ class GUI:
         self._mem_texture = self.ctx.texture(size=self.size, components=4)
         self._framebuffer = self.ctx.framebuffer(self._mem_texture)
 
+        # DEBUG
+        self._show_bbox = False
+
         # WIDGETS
         self.widgets: LinkedList[Child] = LinkedList()
 
         self.font = Font(name='Bitter-VariableFont_wght', char_size=50)
 
-        self.frame_counter = TextField(self, (500, 300), 'tehgfhjhghjhfgjkfxt', self.font,
-                                       ProgramManager(self.ctx).get_program('textured_box'))
-        self.widgets.append(self.frame_counter)
+        ll = LineLayout(self, 'vertical', size=(200, 200), padding=20, spacing=50, texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
 
-        # DEBUG
-        self._show_bbox = False
+        f1 = TextField(ll, line='', font=self.font, size=(20, 10), texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
+        f2 = TextField(ll, line='', font=self.font, size=(10, 10), texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
+        f3 = TextField(ll, line='', font=self.font, size=(10, 10), texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
+
+        s1 = Slider(ll, size=(200, 40))
+        s2 = Slider(ll, size=(200, 40))
+        s3 = Slider(ll, size=(200, 40))
+
+        ll.add(s1, s2, s3)
+
+        self.widgets.append(ll)
 
     # ////////////////////////////////////////////////// PROPERTIES ////////////////////////////////////////////////////
 
     @property
     def ctx(self):
         return self._ctx
+
+    @property
+    def framebuffer(self):
+        return self._framebuffer
 
     @property
     def size(self):
@@ -58,7 +74,7 @@ class GUI:
 
         self._update_framebuffer()
         self._update_layout()
-        self._redraw()
+        self.redraw()
 
     @property
     def width(self):
@@ -102,7 +118,7 @@ class GUI:
 
     # /////////////////////////////////////////////////// DISPLAY //////////////////////////////////////////////////////
 
-    def _redraw(self) -> None:
+    def redraw(self) -> None:
         self._framebuffer.use()
         self._framebuffer.clear()
 
@@ -126,7 +142,7 @@ class GUI:
         for widget in self.widgets:
             widget.toggle_bbox(self._show_bbox)
 
-        self._redraw()
+        self.redraw()
 
     # /////////////////////////////////////////////////// RELEASE //////////////////////////////////////////////////////
 
