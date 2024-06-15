@@ -8,7 +8,7 @@ from structlinks.LinkedList import LinkedList
 from .mglmanagers import ProgramManager, TextureManager, BufferManager
 from .slider import Slider
 from .text_render import TextField, Font
-from .layout import LineLayout
+from .linelayout import LineLayout
 
 
 class GUI:
@@ -65,6 +65,10 @@ class GUI:
         return self._framebuffer
 
     @property
+    def window_pos(self):
+        return 0, 0
+
+    @property
     def size(self):
         return self._size
 
@@ -87,17 +91,17 @@ class GUI:
     # //////////////////////////////////////////////////// MOUSE ///////////////////////////////////////////////////////
 
     def mouse_down(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
-        for widget in self.widgets:
+        for widget in self._widgets:
             if widget.cords_in_rect(mouse_pos):
                 return widget.mouse_down(button_name, mouse_pos, count)
 
     def mouse_up(self, button_name: str, mouse_pos: tuple[int, int]) -> Child | None:
-        for widget in self.widgets:
+        for widget in self._widgets:
             if widget.cords_in_rect(mouse_pos):
                 return widget.mouse_up(button_name, mouse_pos)
 
     def mouse_drag(self, button_name: str, mouse_pos: tuple[int, int], rel: tuple[int, int]) -> Child | None:
-        for widget in self.widgets:
+        for widget in self._widgets:
             if widget.cords_in_rect(mouse_pos):
                 return widget.mouse_drag(button_name, mouse_pos, rel)
 
@@ -122,10 +126,8 @@ class GUI:
         self._framebuffer.use()
         self._framebuffer.clear()
 
-        for widget in self.widgets:
+        for widget in self._widgets:
             widget.draw()
-
-        self.ctx.screen.use()
 
     def draw(self) -> None:
         self.ctx.screen.use()
@@ -139,7 +141,7 @@ class GUI:
         else:
             self._show_bbox = not self._show_bbox
 
-        for widget in self.widgets:
+        for widget in self._widgets:
             widget.toggle_bbox(self._show_bbox)
 
         self.redraw()
@@ -147,10 +149,10 @@ class GUI:
     # /////////////////////////////////////////////////// RELEASE //////////////////////////////////////////////////////
 
     def _release_widgets(self) -> None:
-        for widget in self.widgets:
+        for widget in self._widgets:
             widget.release()
 
-        self.widgets = LinkedList()
+        self._widgets = LinkedList()
 
     def release(self) -> None:
         self._vertices.release()

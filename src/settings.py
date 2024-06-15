@@ -8,7 +8,7 @@ BASE_DIR = os.getcwd()
 
 W_SIZE = (1000, 600)
 
-FPS = 144
+FPS = -1
 
 # MONITOR
 

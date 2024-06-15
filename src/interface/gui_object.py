@@ -93,6 +93,10 @@ class GUIObject:
         self._update_vertices()
 
     @property
+    def window_pos(self):
+        return (self.parent.window_pos[0] + self._pos[0], self.parent.window_pos[1] + self._pos[1])
+
+    @property
     def size_hints(self):
         return self._size_hints
 
@@ -133,7 +137,7 @@ class GUIObject:
                                                rect_pos=self.pos))
 
     def cords_in_rect(self, cords):
-        return all(0 < cords[i] - self.pos[i] < self.size[i] for i in (0, 1))
+        return all(0 < cords[i] - self.window_pos[i] < self.size[i] for i in (0, 1))
 
     def move(self, move):
         self.pos = (self.pos[0] + move[0], self.pos[1] + move[1])
@@ -141,18 +145,21 @@ class GUIObject:
     # //////////////////////////////////////////////////// MOUSE ///////////////////////////////////////////////////////
 
     def mouse_down(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
+        mouse_pos = (mouse_pos[0] - self.window_pos[0], mouse_pos[1] - self.window_pos[1])
         return self._mouse_down_func(button_name, mouse_pos, count)
 
     def _mouse_down_func(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
         return None
 
     def mouse_up(self, button_name: str, mouse_pos: tuple[int, int]) -> Child | None:
+        mouse_pos = (mouse_pos[0] - self.window_pos[0], mouse_pos[1] - self.window_pos[1])
         return self._mouse_up_func(button_name, mouse_pos)
 
     def _mouse_up_func(self, button_name: str, mouse_pos: tuple[int, int]) -> Child | None:
         return None
 
     def mouse_drag(self, button_name: str, mouse_pos: tuple[int, int], rel: tuple[int, int]) -> Child | None:
+        mouse_pos = (mouse_pos[0] - self.window_pos[0], mouse_pos[1] - self.window_pos[1])
         return self._mouse_drag_func(button_name, mouse_pos, rel)
 
     def _mouse_drag_func(self, button_name: str, mouse_pos: tuple[int, int], rel: tuple[int, int]) -> Child | None:
@@ -227,28 +234,31 @@ class GUILayout(GUIObject, ABC):
         self._update_layout()
         self.redraw()
 
+    @GUIObject.pos.setter
+    def pos(self, value: tuple[int, int]):
+        GUIObject.pos.fset(self, value)
+
+        self.parent.redraw()
+
     # //////////////////////////////////////////////////// MOUSE ///////////////////////////////////////////////////////
 
     def mouse_down(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
-        mouse_pos = (mouse_pos[0] - self.pos[0], mouse_pos[1] - self.pos[1])
 
         for widget in self._widgets:
             if widget.cords_in_rect(mouse_pos):
                 if widget.mouse_down(button_name, mouse_pos, count) is not None:
                     return widget
 
-        return self._mouse_down_func(button_name, mouse_pos, count)
+        return super().mouse_down(button_name, mouse_pos, count)
 
     def mouse_up(self, button_name: str, mouse_pos: tuple[int, int]) -> Child | None:
-        mouse_pos = (mouse_pos[0] - self.pos[0], mouse_pos[1] - self.pos[1])
-        print(self, mouse_pos)
 
         for widget in self._widgets:
             if widget.cords_in_rect(mouse_pos):
                 if widget.mouse_up(button_name, mouse_pos) is not None:
                     return widget
 
-        return self._mouse_up_func(button_name, mouse_pos)
+        return super().mouse_up(button_name, mouse_pos)
 
     # /////////////////////////////////////////////////// DISPLAY //////////////////////////////////////////////////////
 
