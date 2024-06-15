@@ -36,23 +36,14 @@ class GUI:
         self._show_bbox = False
 
         # WIDGETS
-        self.widgets: LinkedList[Child] = LinkedList()
+        self._widgets: LinkedList[Child] = LinkedList()
 
-        self.font = Font(name='Bitter-VariableFont_wght', char_size=50)
+        self.font = Font(name='CascadiaMono', char_size=100)
 
-        ll = LineLayout(self, 'vertical', size=(200, 200), padding=20, spacing=50, texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
+        ll = LineLayout(parent=self, orientation='vertical', size=(200, 100), texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
 
-        f1 = TextField(ll, line='', font=self.font, size=(20, 10), texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
-        f2 = TextField(ll, line='', font=self.font, size=(10, 10), texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
-        f3 = TextField(ll, line='', font=self.font, size=(10, 10), texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
-
-        s1 = Slider(ll, size=(200, 40))
-        s2 = Slider(ll, size=(200, 40))
-        s3 = Slider(ll, size=(200, 40))
-
-        ll.add(s1, s2, s3)
-
-        self.widgets.append(ll)
+        TextField(parent=ll, line='-', font=self.font, texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
+        Slider(parent=ll)
 
     # ////////////////////////////////////////////////// PROPERTIES ////////////////////////////////////////////////////
 
@@ -107,11 +98,14 @@ class GUI:
 
     # /////////////////////////////////////////////////// DISPLAY //////////////////////////////////////////////////////
 
+    def add(self, widget: Child):
+        self._widgets.append(widget)
+
     def _update_layout(self) -> None:
         self._framebuffer.use()
 
-        for widget in self.widgets:
-            widget.pos = widget.pos
+        for widget in self._widgets:
+            widget.size = widget.size
 
     def _update_framebuffer(self) -> None:
         self._mem_texture.release()

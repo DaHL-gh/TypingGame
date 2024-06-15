@@ -8,23 +8,12 @@ from .constants import *
 
 
 class LineLayout(GUILayout):
-    def __init__(self,
-                 parent: Parent,
-                 orientation: str,
-                 padding: int = 0,
-                 spacing: int = 0,
-                 size: tuple[int, int] = (1, 1),
-                 pos: tuple[int, int] = (0, 0),
-                 program: mgl.Program | None = None,
-                 min_size: tuple[int, int] = None,
-                 size_hints: tuple[float | int, float | int] = (NONE, NONE),
-                 texture: mgl.Texture | None = None):
-        super().__init__(parent=parent, size=size, pos=pos, program=program,
-                         min_size=min_size, size_hints=size_hints, texture=texture)
+    def __init__(self, padding=20, spacing=20, orientation='vertical', **kwargs):
+        super().__init__(**kwargs)
 
-        self._orientation = orientation
         self._padding = padding
         self._spacing = spacing
+        self._orientation = orientation
 
     @property
     def orientation(self):
@@ -60,11 +49,7 @@ class LineLayout(GUILayout):
 
                 pos_mem += self._spacing
 
-    def add(self, *args):
-        for x in args:
-            self._widgets.append(x)
 
-        self._update_layout()
 
     def _mouse_down_func(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
         return self

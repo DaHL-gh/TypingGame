@@ -47,18 +47,14 @@ class Font:
 
 
 class Char(GUIObject):
-    def __init__(self,
-                 parent: TextField,
-                 glyph: Glyph,
-                 texture: mgl.Texture,
-                 pos: tuple[int, int] = (0, 0),
-                 color: tuple[float, float, float] = (1, 1, 1)):
+    def __init__(self, glyph: Glyph, color: tuple[float, float, float] = (1, 1, 1), **kwargs):
         self._color = color
-        self._color_buffer = parent.ctx.buffer(glm.vec3(self._color))
+        self._color_buffer = kwargs['parent'].ctx.buffer(glm.vec3(self._color))
 
         self.glyph = glyph
-        super().__init__(parent=parent, size=self.glyph.size, size_hints=(FIXED, FIXED), pos=pos,
-                         program=ProgramManager(parent.ctx).get_program('text_render'), texture=texture)
+        super().__init__(size=self.glyph.size, size_hints=(FIXED, FIXED),
+                         program=ProgramManager(kwargs['parent'].ctx).get_program('text_render'), **kwargs)
+
         self.texture.filter = (mgl.NEAREST, mgl.NEAREST)
 
     def _get_vao(self):
@@ -80,24 +76,14 @@ class Char(GUIObject):
 
 
 class TextField(GUILayout):
-    def __init__(self,
-                 parent: Parent,
-                 font: Font,
-                 size: tuple[int, int] = (1, 1),
-                 pos: tuple[int, int] = (0, 0),
-                 line: str = '',
-                 min_size: tuple[int, int] = None,
-                 size_hints: tuple[float | int, float | int] = (NONE, NONE),
-                 program: mgl.Program | None = None,
-                 texture: mgl.Texture | None = None):
-
-        super().__init__(parent=parent, size=size, pos=pos, min_size=min_size,
-                         size_hints=size_hints, program=program, texture=texture)
+    def __init__(self, font: Font, line: str = '', **kwargs):
+        super().__init__(**kwargs)
 
         self._font = font
 
         self._pen = (0, 0)
-        self.max_vertical_advance = self._font.char_size * 2
+        self.line_height = self._font.char_size * 2
+        self.visible_widgets_count = 0
 
         self._bitmap_textures: dict[str: mgl.Texture] = {}
 
@@ -119,23 +105,44 @@ class TextField(GUILayout):
                 self._bitmap_textures[char] = self.ctx.texture(size=glyph.size, data=glyph.bitmap, components=1)
                 self._bitmap_textures[char].filter = (mgl.NEAREST, mgl.NEAREST)
 
-            self._widgets.append(Char(self, glyph, self._bitmap_textures[char]))
+            Char(parent=self, glyph=glyph, texture=self._bitmap_textures[char])
 
         self._update_layout()
         self.redraw()
 
-    def _update_layout(self):
-        self._pen = [0, self.max_vertical_advance]
+    def _update_layout(self) -> None:
+        self.visible_widgets_count = 0
+
+        self._pen = [0, self.line_height]
 
         for char in self._widgets:
-            if self._pen[0] + char.glyph.size[0] > self.size[0]:
+            if self._pen[0] + char.glyph.size[0] + char.glyph.offset[0] > self.size[0]:
                 self._pen[0] = 0
-                self._pen[1] += self.max_vertical_advance
+
+                if self._pen[1] > self.height:
+                    break
+                self._pen[1] += self.line_height
 
             char.pos = (self._pen[0] + char.glyph.offset[0],
                         self._pen[1] - char.glyph.offset[1] - char.glyph.size[1])
+            self.visible_widgets_count += 1
 
             self._pen[0] += char.glyph.horizontal_advance
+
+    def redraw(self):
+        print(self.visible_widgets_count)
+        self.framebuffer.use()
+        self.framebuffer.clear()
+
+        i = 0
+        for widget in self._widgets:
+            widget.draw()
+
+            i += 1
+            if i == self.visible_widgets_count:
+                break
+
+        self.parent.redraw()
 
     def append_line(self, line: str):
         for char in line:
@@ -145,18 +152,9 @@ class TextField(GUILayout):
                 self._bitmap_textures[char] = self.ctx.texture(size=glyph.size, data=glyph.bitmap, components=1)
                 self._bitmap_textures[char].filter = (mgl.NEAREST, mgl.NEAREST)
 
-            char = Char(self, glyph, self._bitmap_textures[char])
-            self._widgets.append(char)
+            Char(parent=self, glyph=glyph, texture=self._bitmap_textures[char])
 
-            if self._pen[0] + char.glyph.size[0] > self.size[0]:
-                self._pen[0] = 0
-                self._pen[1] += self.max_vertical_advance
-
-            char.pos = (self._pen[0] + char.glyph.offset[0],
-                        self._pen[1] - char.glyph.offset[1] - char.glyph.size[1])
-
-            self._pen[0] += char.glyph.horizontal_advance
-
+        self._update_layout()
         self.redraw()
 
     def remove_last(self):

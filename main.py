@@ -35,19 +35,19 @@ class Window:
         self.gui.draw()
 
     def run(self):
-        fps_buffer = LinkedList([100 for _ in range(100)])
-        self.summ = 100 * 100
+        fps_buffer_size = 10
+        fps_buffer = LinkedList([0 for _ in range(fps_buffer_size)])
+        self.summ = 0
 
         while True:
             self.ctx.clear()
-            self.gui.size = self.gui.size
             self.event_handler.handle_events()
 
             self.draw()
-            # print(self.summ // 100)
+            # print(self.summ)
 
             self.summ -= fps_buffer.pop(0)
-            x = self.clock.get_fps()
+            x = self.clock.get_fps() / fps_buffer_size
             self.summ += x
             fps_buffer.append(x)
 

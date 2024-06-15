@@ -53,6 +53,8 @@ class GUIObject:
 
         self._show_bbox = self.parent._show_bbox
 
+        self.parent.add(self)
+
     def _get_vao(self):
         self._vao = self.ctx.vertex_array(self._program,
                                           [
@@ -193,17 +195,9 @@ class GUIObject:
 
 
 class GUILayout(GUIObject, ABC):
-    def __init__(self,
-                 parent: Parent,
-                 size: tuple[int, int] = (1, 1),
-                 pos: tuple[int, int] = (0, 0),
-                 program: mgl.Program | None = None,
-                 min_size: tuple[int, int] = None,
-                 size_hints: tuple[float | int, float | int] = (NONE, NONE),
-                 texture: mgl.Texture | None = None):
+    def __init__(self, **kwargs):
 
-        super().__init__(parent=parent, size=size, pos=pos, program=program,
-                         min_size=min_size, size_hints=size_hints, texture=texture)
+        super().__init__(**kwargs)
 
         self._mem_texture = self.ctx.texture(size=self.size, components=4)
         self._framebuffer = self.ctx.framebuffer(self._mem_texture)
@@ -220,6 +214,9 @@ class GUILayout(GUIObject, ABC):
     @abstractmethod
     def _update_layout(self) -> None:
         pass
+
+    def add(self, widget: Child):
+        self._widgets.append(widget)
 
     @property
     def framebuffer(self):

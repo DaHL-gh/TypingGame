@@ -9,20 +9,13 @@ from .constants import *
 
 class Slider(GUILayout):
     def __init__(self,
-                 parent: Parent,
                  bar_width: int = 10,
                  slider_width: int = 10,
-                 size: tuple[int, int] = (1, 1),
-                 pos: tuple[int, int] = (0, 0),
-                 min_size: tuple[int, int] = None,
-                 size_hints: tuple[float | int, float | int] = (NONE, NONE),
-                 program: mgl.Program | None = None,
-                 texture: mgl.Texture | None = None,
                  slider_texture: mgl.Texture | None = None,
-                 bar_texture: mgl.Texture | None = None):
+                 bar_texture: mgl.Texture | None = None,
+                 **kwargs):
 
-        super().__init__(parent=parent, size=size, pos=pos, min_size=min_size,
-                         size_hints=size_hints, program=program, texture=texture)
+        super().__init__(**kwargs)
 
         self.slider_width = slider_width
         self.slider_pos = slider_width / 2
