@@ -36,13 +36,13 @@ class GUI:
         self._show_bbox = False
 
         # WIDGETS
-        self._widgets: LinkedList[Child] = LinkedList()
+        self._widgets: list[Child] = []
 
-        self.font = Font(name='CascadiaMono', char_size=100)
+        self.font = Font(name='CascadiaMono', char_size=20)
 
-        ll = LineLayout(parent=self, orientation='vertical', size=(200, 100), texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
+        ll = LineLayout(parent=self, orientation='vertical', size=(200, 200), texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
 
-        TextField(parent=ll, line='-', font=self.font, texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
+        TextField(parent=ll, line='sdsdf', font=self.font, texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
         Slider(parent=ll)
 
     # ////////////////////////////////////////////////// PROPERTIES ////////////////////////////////////////////////////
@@ -54,6 +54,9 @@ class GUI:
     @property
     def framebuffer(self):
         return self._framebuffer
+
+    def show_bbox(self):
+        return self._show_bbox
 
     @property
     def window_pos(self):

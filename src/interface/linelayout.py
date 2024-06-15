@@ -15,6 +15,10 @@ class LineLayout(GUILayout):
         self._spacing = spacing
         self._orientation = orientation
 
+        self.fixed_sizes = []
+        self.th_sizes = []
+        self.free_size_w_count = 0
+
     @property
     def orientation(self):
         return self._orientation
@@ -22,34 +26,47 @@ class LineLayout(GUILayout):
     def _update_layout(self) -> None:
         if self.orientation == 'vertical':
 
-            gathered_space = self._padding * 2 + self._spacing * (len(self._widgets) - 1)
-            free_size_w_count = 0
-            max_min_w = 0
-            min_h = 0
+            gathered_space = (self._padding * 2 +
+                              self._spacing * (len(self._widgets) - 1) +
+                              sum(self.fixed_sizes) +
+                              sum(self.th_sizes) * self.height)
+
+            filling_widget_size = (self.height - gathered_space) / self.free_size_w_count
+
+            height_mem = self._padding
             for widget in self._widgets:
-                max_min_w = max(max_min_w, widget.min_size[0])
-                min_h += widget.min_size[1]
-                if widget.size_hints[1] == NONE:
-                    free_size_w_count += 1
+
+                if widget.base_width is not None:
+                    widget.width = widget.base_width
+                elif widget.width_hint is not None:
+                    widget.width = int(widget.width_hint * self.width)
                 else:
-                    gathered_space += widget.size[1]
+                    widget.width = self.width - self._padding * 2
 
-            self.min_size = (max_min_w + self._padding * 2, self._padding * 2 + min_h + self._spacing * (len(self._widgets) - 1))
+                widget.pos = (self._padding + (self.width - self._padding * 2 - widget.width) / 2, height_mem)
 
-            x = int((self.size[1] - gathered_space) / free_size_w_count)
-            pos_mem = self._padding
-            for widget in self._widgets:
-                widget.pos = (self._padding, pos_mem)
-                if widget.size_hints[1] == NONE:
-                    pos_mem += x
-                    widget.size = (int(self.size[0] - self._padding * 2), x)
+                if widget.base_height is not None:
+                    height_mem += widget.base_height
+                    widget.height = widget.base_height
+                elif widget.height_hint is not None:
+                    height_mem += widget.height_hint * self.height
+                    widget.height = int(widget.height_hint * self.height)
                 else:
-                    pos_mem += self.size * widget.size_hints[1]
-                    widget.size = (int(self.size[0] - self._padding * 2), int(self.size * widget.size_hints[1]))
+                    height_mem += filling_widget_size
+                    widget.height = filling_widget_size
 
-                pos_mem += self._spacing
+                height_mem += self._spacing
 
+    def add(self, widget: Child):
+        if self.orientation == 'vertical':
+            if widget.base_height is not None:
+                self.fixed_sizes.append(widget.height)
+            elif widget.height_hint is not None:
+                self.th_sizes.append(widget.height_hint)
+            else:
+                self.free_size_w_count += 1
 
+        super().add(widget)
 
     def _mouse_down_func(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
         return self

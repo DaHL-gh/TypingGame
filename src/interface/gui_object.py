@@ -8,24 +8,31 @@ from abc import ABC, abstractmethod
 
 from .mglmanagers import ProgramManager, BufferManager
 from ..functions import get_rect_vertices
-from .constants import *
 
 
 class GUIObject:
     def __init__(self,
                  parent: Parent,
-                 size: tuple[int, int] = (1, 1),
+                 size: tuple[int | None, int | None] = (None, None),
+                 min_size: tuple[int | None, int | None] = (None, None),
+                 size_hint: tuple[float | None, float | None] = (None, None),
                  pos: tuple[int, int] = (0, 0),
                  program: mgl.Program | None = None,
-                 min_size: tuple[int, int] = None,
-                 size_hints: tuple[float | int, float | int] = (NONE, NONE),
                  texture: mgl.Texture | None = None):
 
         self.parent = parent
 
+        # FORM
+        self._size = tuple(size[i] if size[i] is not None else 1 for i in (0, 1))
+        self._min_size = tuple(max(min_size[i], self._size[i]) if min_size[i] is not None else 1 for i in (0, 1))
+        self._base_size = size
+        self._size_hint = size_hint
+
+        self._pos = pos
+
         # MGL ATTRIBUTES
         if texture is None:
-            texture = self.ctx.texture(size=size, components=1)
+            texture = self.ctx.texture(size=self.size, components=1)
         self._texture = texture
 
         self._vertices = self.ctx.buffer(reserve=32)
@@ -41,17 +48,9 @@ class GUIObject:
                                                     'in_texture_cords')
                                                ])
 
-        # FORM
-
-        self._size = size
-        self.min_size = size if min_size is None else min_size
-        self._size_hints = size_hints
-
-        self._pos = pos
-
         self._update_vertices()
 
-        self._show_bbox = self.parent._show_bbox
+        self.show_bbox = self.parent.show_bbox
 
         self.parent.add(self)
 
@@ -96,19 +95,15 @@ class GUIObject:
 
     @property
     def window_pos(self):
-        return (self.parent.window_pos[0] + self._pos[0], self.parent.window_pos[1] + self._pos[1])
-
-    @property
-    def size_hints(self):
-        return self._size_hints
+        return self.parent.window_pos[0] + self._pos[0], self.parent.window_pos[1] + self._pos[1]
 
     @property
     def size(self):
         return self._size
 
     @size.setter
-    def size(self, value: tuple[int, int]):
-        self._size = tuple(max(value[i], self.min_size[i]) if self.size_hints[i] != FIXED else self._size[i] for i in (0, 1))
+    def size(self, value: int):
+        self._size = value
 
         self._update_vertices()
 
@@ -118,17 +113,52 @@ class GUIObject:
 
     @width.setter
     def width(self, value: int):
-        if self.size_hints[0] != FIXED:
-            self._size = (value, self.height)
+        self.size = (int(value), self.height)
 
     @property
     def height(self):
         return self._size[1]
 
     @height.setter
-    def height(self, value):
-        if self.size_hints[1] != FIXED:
-            self._size = (self.width, value)
+    def height(self, value: int):
+        print(value)
+        self.size = (self.width, int(value))
+
+    @property
+    def size_hint(self):
+        return self._size_hint
+
+    @property
+    def width_hint(self):
+        return self.size_hint[0]
+
+    @property
+    def height_hint(self):
+        return self.size_hint[1]
+
+    @property
+    def base_size(self):
+        return self._base_size
+
+    @property
+    def base_width(self):
+        return self._base_size[0]
+
+    @property
+    def base_height(self):
+        return self._base_size[1]
+
+    @property
+    def min_size(self):
+        return self._min_size
+
+    @property
+    def min_width(self):
+        return self._min_size[0]
+
+    @property
+    def min_height(self):
+        return self._min_size[1]
 
     # //////////////////////////////////////////////////// SMTNG ///////////////////////////////////////////////////////
 
@@ -202,7 +232,7 @@ class GUILayout(GUIObject, ABC):
         self._mem_texture = self.ctx.texture(size=self.size, components=4)
         self._framebuffer = self.ctx.framebuffer(self._mem_texture)
 
-        self._widgets: LinkedList[Child] = LinkedList()
+        self._widgets: list[Child] = []
 
     def _update_framebuffer(self) -> None:
         self._mem_texture.release()
@@ -224,8 +254,8 @@ class GUILayout(GUIObject, ABC):
 
     @GUIObject.size.setter
     def size(self, value: tuple[int, int]):
-
         GUIObject.size.fset(self, value)
+
 
         self._update_framebuffer()
         self._update_layout()

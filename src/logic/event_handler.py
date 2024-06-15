@@ -50,8 +50,8 @@ class EventHandler:
                 elif event.dict['key'] == pg.K_BACKSPACE:
                     self.last_press.widget.remove_last()
 
-                # if self.last_press.widget is not None:
-                #     self.last_press.widget.append_line(event.dict['unicode'])
+                if self.last_press.widget is not None:
+                    self.last_press.widget.append_line(event.dict['unicode'])
 
 
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

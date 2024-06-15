@@ -52,7 +52,7 @@ class Char(GUIObject):
         self._color_buffer = kwargs['parent'].ctx.buffer(glm.vec3(self._color))
 
         self.glyph = glyph
-        super().__init__(size=self.glyph.size, size_hints=(FIXED, FIXED),
+        super().__init__(size=self.glyph.size,
                          program=ProgramManager(kwargs['parent'].ctx).get_program('text_render'), **kwargs)
 
         self.texture.filter = (mgl.NEAREST, mgl.NEAREST)
@@ -130,7 +130,6 @@ class TextField(GUILayout):
             self._pen[0] += char.glyph.horizontal_advance
 
     def redraw(self):
-        print(self.visible_widgets_count)
         self.framebuffer.use()
         self.framebuffer.clear()
 
