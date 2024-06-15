@@ -267,6 +267,10 @@ class GUILayout(GUIObject, ABC):
         self._mem_texture.use()
         self._vao.render(mgl.TRIANGLE_STRIP)
 
+        if self._show_bbox:
+            self._bbox_vao.program['w_size'].write(glm.vec2(self.size))
+            self._bbox_vao.render(mgl.TRIANGLE_STRIP)
+
     def toggle_bbox(self, state=None):
         super().toggle_bbox(state)
 
