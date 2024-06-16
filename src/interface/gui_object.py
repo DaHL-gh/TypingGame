@@ -23,8 +23,8 @@ class GUIObject:
         self.parent = parent
 
         # FORM
-        self._size = tuple(size[i] if size[i] is not None else 1 for i in (0, 1))
-        self._min_size = tuple(max(min_size[i], self._size[i]) if min_size[i] is not None else 1 for i in (0, 1))
+        self._size = tuple(int(size[i]) if size[i] is not None else 1 for i in (0, 1))
+        self._min_size = tuple(max(int(min_size[i]), self._size[i]) if min_size[i] is not None else 1 for i in (0, 1))
         self._base_size = size
         self._size_hint = size_hint
 
@@ -102,8 +102,8 @@ class GUIObject:
         return self._size
 
     @size.setter
-    def size(self, value: int):
-        self._size = value
+    def size(self, value: tuple[int, int]):
+        self._size = (max(self._min_size[0], value[0]), max(self._min_size[1], value[1]))
 
         self._update_vertices()
 
@@ -113,7 +113,7 @@ class GUIObject:
 
     @width.setter
     def width(self, value: int):
-        self.size = (int(value), self.height)
+        self.size = (max(self.min_width, value), self.height)
 
     @property
     def height(self):
@@ -121,8 +121,7 @@ class GUIObject:
 
     @height.setter
     def height(self, value: int):
-        print(value)
-        self.size = (self.width, int(value))
+        self.size = (self.width, max(self.min_height, value))
 
     @property
     def size_hint(self):
@@ -274,7 +273,7 @@ class GUILayout(GUIObject, ABC):
         for widget in self._widgets:
             if widget.cords_in_rect(mouse_pos):
                 if widget.mouse_down(button_name, mouse_pos, count) is not None:
-                    return widget
+                    return widget.mouse_down(button_name, mouse_pos, count)
 
         return super().mouse_down(button_name, mouse_pos, count)
 
@@ -283,7 +282,7 @@ class GUILayout(GUIObject, ABC):
         for widget in self._widgets:
             if widget.cords_in_rect(mouse_pos):
                 if widget.mouse_up(button_name, mouse_pos) is not None:
-                    return widget
+                    return widget.mouse_up(button_name, mouse_pos)
 
         return super().mouse_up(button_name, mouse_pos)
 

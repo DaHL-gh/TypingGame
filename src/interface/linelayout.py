@@ -24,6 +24,8 @@ class LineLayout(GUILayout):
         return self._orientation
 
     def _update_layout(self) -> None:
+        min_width = min_height = 0
+
         if self.orientation == 'vertical':
 
             gathered_space = (self._padding * 2 +
@@ -31,7 +33,10 @@ class LineLayout(GUILayout):
                               sum(self.fixed_sizes) +
                               sum(self.th_sizes) * self.height)
 
-            filling_widget_size = (self.height - gathered_space) / self.free_size_w_count
+            if self.free_size_w_count != 0:
+                filling_widget_size = int((self.width - gathered_space) / self.free_size_w_count)
+            else:
+                filling_widget_size = 0
 
             height_mem = self._padding
             for widget in self._widgets:
@@ -41,7 +46,7 @@ class LineLayout(GUILayout):
                 elif widget.width_hint is not None:
                     widget.width = int(widget.width_hint * self.width)
                 else:
-                    widget.width = self.width - self._padding * 2
+                    widget.width = int(self.width - self._padding * 2)
 
                 widget.pos = (self._padding + (self.width - self._padding * 2 - widget.width) / 2, height_mem)
 
@@ -55,7 +60,53 @@ class LineLayout(GUILayout):
                     height_mem += filling_widget_size
                     widget.height = filling_widget_size
 
+                min_width = max(min_width, widget.min_width)
+                min_height += widget.min_height
                 height_mem += self._spacing
+
+            min_width += self._padding * 2
+            min_height += self._padding * 2 + self._spacing * (len(self._widgets) - 1)
+
+        else:
+            gathered_space = (self._padding * 2 +
+                              self._spacing * (len(self._widgets) - 1) +
+                              sum(self.fixed_sizes) +
+                              sum(self.th_sizes) * self.width)
+
+            if self.free_size_w_count != 0:
+                filling_widget_size = int((self.width - gathered_space) / self.free_size_w_count)
+            else:
+                filling_widget_size = 0
+
+            width_mem = self._padding
+            for widget in self._widgets:
+
+                if widget.base_height is not None:
+                    widget.height = widget.base_height
+                elif widget.height_hint is not None:
+                    widget.height = int(widget.height_hint * self.height)
+                else:
+                    widget.height = int(self.height - self._padding * 2)
+
+                widget.pos = (width_mem, self._padding + (self.height - self._padding * 2 - widget.height) / 2)
+
+                if widget.base_width is not None:
+                    width_mem += widget.base_width
+                    widget.width = widget.base_width
+                elif widget.height_hint is not None:
+                    width_mem += widget.width_hint * self.width
+                    widget.width = int(widget.width_hint * self.width)
+                else:
+                    width_mem += filling_widget_size
+                    widget.width = filling_widget_size
+
+                min_height = max(min_height, widget.min_height)
+                min_width += widget.min_width
+                width_mem += self._spacing
+
+            min_height += self._padding * 2
+            min_width += self._padding * 2 + self._spacing * (len(self._widgets) - 1)
+        self._min_size = (min_width, min_height)
 
     def add(self, widget: Child):
         if self.orientation == 'vertical':
@@ -63,6 +114,14 @@ class LineLayout(GUILayout):
                 self.fixed_sizes.append(widget.height)
             elif widget.height_hint is not None:
                 self.th_sizes.append(widget.height_hint)
+            else:
+                self.free_size_w_count += 1
+
+        else:
+            if widget.base_width is not None:
+                self.fixed_sizes.append(widget.width)
+            elif widget.width_hint is not None:
+                self.th_sizes.append(widget.width_hint)
             else:
                 self.free_size_w_count += 1
 

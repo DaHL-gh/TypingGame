@@ -38,13 +38,7 @@ class EventHandler:
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
             elif event.type == pg.KEYDOWN:
-                if event.dict['key'] == pg.K_F5:
-                    gui._widgets[0].line = f'fps: {window.summ // 100}'
-
-                elif event.dict['key'] == pg.K_F4:
-                    gui._widgets[0].size = (50, 50)
-
-                elif event.dict['key'] == pg.K_w:
+                if event.dict['key'] == pg.K_w:
                     gui.toggle_bbox()
 
                 elif event.dict['key'] == pg.K_BACKSPACE:
