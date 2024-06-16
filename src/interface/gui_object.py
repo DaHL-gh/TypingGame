@@ -196,6 +196,12 @@ class GUIObject:
     def _mouse_drag_func(self, button_name: str, mouse_pos: tuple[int, int], rel: tuple[int, int]) -> Child | None:
         return None
 
+    def keyboard_press(self, key: int, unicode: str):
+        return  self._keyboard_press(key, unicode)
+
+    def _keyboard_press(self, key: int, unicode: str):
+        return  None
+
     # /////////////////////////////////////////////////// DISPLAY //////////////////////////////////////////////////////
 
     def draw(self) -> None:
@@ -254,7 +260,6 @@ class GUILayout(GUIObject, ABC):
     @GUIObject.size.setter
     def size(self, value: tuple[int, int]):
         GUIObject.size.fset(self, value)
-
 
         self._update_framebuffer()
         self._update_layout()

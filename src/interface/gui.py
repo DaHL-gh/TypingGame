@@ -40,10 +40,13 @@ class GUI:
 
         self.font = Font(name='CascadiaMono', char_size=20)
 
-        ll = LineLayout(parent=self, orientation='vertical', size=(200, 200), texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
+        ll = LineLayout(parent=self, orientation='horizontal', size=(200, 200), texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
+        ll2 = LineLayout(parent=ll, orientation='horizontal', texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
 
-        TextField(parent=ll, line='sdsdf', font=self.font, texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
-        Slider(parent=ll)
+        TextField(parent=ll, font=self.font)
+        Slider(parent=ll2, size=(None, 80), orientation='vertical', slider_width=50)
+        Slider(parent=ll2, size=(None, 40))
+        Slider(parent=ll2, size=(None, 40))
 
     # ////////////////////////////////////////////////// PROPERTIES ////////////////////////////////////////////////////
 

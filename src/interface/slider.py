@@ -9,37 +9,60 @@ from .constants import *
 
 class Slider(GUILayout):
     def __init__(self,
-                 bar_width: int = 10,
+                 orientation: str = 'horizontal',
                  slider_width: int = 10,
+                 bar_width: int = 10,
                  slider_texture: mgl.Texture | None = None,
                  bar_texture: mgl.Texture | None = None,
                  **kwargs):
 
         super().__init__(**kwargs)
 
-        self.slider_width = slider_width
-        self.slider_pos = slider_width / 2
-        self.slider = GUIObject(self, texture=slider_texture)
+        self._orientation = orientation
 
-        self.bar_width = bar_width
-        self.bar = GUIObject(self, texture=bar_texture)
+        self._bar_width = bar_width
+        self._bar = GUIObject(self, texture=bar_texture)
 
-        self._widgets.append(self.bar)
-        self._widgets.append(self.slider)
+        self._slider_width = slider_width
+        self._value = 0
+        self._slider = GUIObject(self, texture=slider_texture)
+
+    @property
+    def orientation(self):
+        return self._orientation
 
     def _update_layout(self) -> None:
-        self.slider.pos = (int(self.slider_pos - self.slider_width / 2), 0)
-        self.slider.size = (self.slider_width, self.height)
+        if self.orientation == 'vertical':
+            self._slider.pos = (0, int(self._value * (self.height - self._slider_width)))
+            self._slider.size = (self.width, self._slider_width)
 
-        self.bar.pos = (int(self.slider_width / 2), int((self.height - self.bar_width) / 2))
-        self.bar.size = (self.width - self.slider_width, self.bar_width)
+            self._bar.pos = (int((self.width - self._bar_width) / 2), int(self._slider_width / 2))
+            self._bar.size = (self._bar_width, self.height - self._slider_width)
+        else:
+            self._slider.pos = (int(self._value * (self.width - self._slider_width)), 0)
+            self._slider.size = (self._slider_width, self.height)
+
+            self._bar.size = (self.width - self._slider_width, self._bar_width)
+            self._bar.pos = (int(self._slider_width / 2), int((self.height - self._bar_width) / 2))
 
     def _mouse_down_func(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
         return self
 
     def _mouse_drag_func(self, button_name: str, mouse_pos: tuple[int, int], rel: tuple[int, int]) -> Child | None:
-        if self.slider_width / 2 < mouse_pos[0] < self.width - self.slider_width / 2:
-            self.slider_pos = mouse_pos[0]
+        if self.orientation == 'vertical':
+            if mouse_pos[1] < self._slider_width / 2:
+                self._value = 0.
+            elif mouse_pos[1] > self.height - self._slider_width / 2:
+                self._value = 1.
+            else:
+                self._value = (mouse_pos[1] - self._slider_width / 2) / (self.height - self._slider_width)
+        else:
+            if mouse_pos[0] < self._slider_width / 2:
+                self._value = 0.
+            elif mouse_pos[0] > self.width - self._slider_width / 2:
+                self._value = 1.
+            else:
+                self._value = (mouse_pos[0] - self._slider_width / 2) / (self.width - self._slider_width)
 
         self._update_layout()
         self.redraw()

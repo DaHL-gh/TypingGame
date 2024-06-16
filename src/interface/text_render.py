@@ -99,16 +99,31 @@ class TextField(GUILayout):
 
         self._line = line
         for char in line:
-            glyph = self._font.get_glyph(ord(char))
+            self._add_char(char)
 
-            if char not in self._bitmap_textures:
-                self._bitmap_textures[char] = self.ctx.texture(size=glyph.size, data=glyph.bitmap, components=1)
-                self._bitmap_textures[char].filter = (mgl.NEAREST, mgl.NEAREST)
-
-            Char(parent=self, glyph=glyph, texture=self._bitmap_textures[char])
-
-        self._update_layout()
         self.redraw()
+
+    def _add_char(self, char: str):
+        glyph = self._font.get_glyph(ord(char))
+
+        if self._pen[0] + glyph.size[0] + glyph.offset[0] > self.size[0]:
+            self._pen = (0, self._pen[1] + self.line_height)
+
+        if char not in self._bitmap_textures:
+            self._bitmap_textures[char] = self.ctx.texture(size=glyph.size, data=glyph.bitmap, components=1)
+            self._bitmap_textures[char].filter = (mgl.NEAREST, mgl.NEAREST)
+
+        pos = (self._pen[0] + glyph.offset[0],
+               self._pen[1] - glyph.offset[1] - glyph.size[1])
+
+        self.visible_widgets_count += 1
+
+        self._pen = (self._pen[0] + glyph.horizontal_advance, self._pen[1])
+
+        Char(parent=self, pos=pos, glyph=glyph, texture=self._bitmap_textures[char])
+
+        if char == '\r' or char == '\n':
+            self._pen = (0, self._pen[1] + self.line_height)
 
     def _update_layout(self) -> None:
         self.visible_widgets_count = 0
@@ -117,17 +132,26 @@ class TextField(GUILayout):
 
         for char in self._widgets:
             if self._pen[0] + char.glyph.size[0] + char.glyph.offset[0] > self.size[0]:
-                self._pen[0] = 0
 
                 if self._pen[1] > self.height:
                     break
-                self._pen[1] += self.line_height
+                self._pen = (0, self._pen[1] + self.line_height)
 
             char.pos = (self._pen[0] + char.glyph.offset[0],
                         self._pen[1] - char.glyph.offset[1] - char.glyph.size[1])
+
+            self._pen = (self._pen[0] + char.glyph.horizontal_advance, self._pen[1])
+
+            if char.glyph.symbol == '\r' or char.glyph.symbol == '\n':
+                self._pen = (0, self._pen[1] + self.line_height)
+
             self.visible_widgets_count += 1
 
-            self._pen[0] += char.glyph.horizontal_advance
+    def append_line(self, line: str):
+        for char in line:
+            self._add_char(char)
+
+        self.redraw()
 
     def redraw(self):
         self.framebuffer.use()
@@ -143,30 +167,24 @@ class TextField(GUILayout):
 
         self.parent.redraw()
 
-    def append_line(self, line: str):
-        for char in line:
-            glyph = self._font.get_glyph(ord(char))
-
-            if char not in self._bitmap_textures:
-                self._bitmap_textures[char] = self.ctx.texture(size=glyph.size, data=glyph.bitmap, components=1)
-                self._bitmap_textures[char].filter = (mgl.NEAREST, mgl.NEAREST)
-
-            Char(parent=self, glyph=glyph, texture=self._bitmap_textures[char])
-
-        self._update_layout()
-        self.redraw()
-
     def remove_last(self):
-        x = self._widgets.pop(len(self._widgets) - 1)
-        x.release()
+        if len(self._widgets) > 0:
+            x = self._widgets.pop(len(self._widgets) - 1)
+            x.release(keep_texture=True)
 
-        self.redraw()
+            self._update_layout()
+            self.redraw()
 
-    def release(self, keep_texture=False):
-        super().release(keep_texture)
-
-        for x in self._bitmap_textures.values():
-            x.release(keep_texture)
+    def _keyboard_press(self, key: int, unicode: str):
+        print('press')
+        if unicode == '\t':
+            self.append_line("    ")
+        elif unicode == '\x1b':  # escape
+            pass
+        elif unicode == '\b':  # backspace
+            self.remove_last()
+        else:
+            self.append_line(unicode)
 
     def _mouse_down_func(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
         return self

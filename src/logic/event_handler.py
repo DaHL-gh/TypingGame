@@ -38,14 +38,11 @@ class EventHandler:
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
             elif event.type == pg.KEYDOWN:
-                if event.dict['key'] == pg.K_w:
+                if event.dict['key'] == pg.K_F1:
                     gui.toggle_bbox()
 
-                elif event.dict['key'] == pg.K_BACKSPACE:
-                    self.last_press.widget.remove_last()
-
                 if self.last_press.widget is not None:
-                    self.last_press.widget.append_line(event.dict['unicode'])
+                    self.last_press.widget.keyboard_press(event.dict['key'], event.dict['unicode'])
 
 
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
