@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import moderngl as mgl
-
 from .gui_object import GUILayout
 from .types import Parent, Child
-from .constants import *
 
 
 class LineLayout(GUILayout):
@@ -42,27 +39,26 @@ class LineLayout(GUILayout):
             for widget in self._widgets:
 
                 if widget.base_width is not None:
-                    widget.width = widget.base_width
+                    w_w = widget.base_width
                 elif widget.width_hint is not None:
-                    widget.width = int(widget.width_hint * self.width)
+                    w_w = int(widget.width_hint * self.width)
                 else:
-                    widget.width = int(self.width - self._padding * 2)
+                    w_w = int(self.width - self._padding * 2)
 
-                widget.pos = (self._padding + (self.width - self._padding * 2 - widget.width) / 2, height_mem)
+                widget.pos = (self._padding + (self.width - self._padding * 2 - w_w) / 2, height_mem)
 
                 if widget.base_height is not None:
-                    height_mem += widget.base_height
-                    widget.height = widget.base_height
+                    w_h = widget.base_height
                 elif widget.height_hint is not None:
-                    height_mem += widget.height_hint * self.height
-                    widget.height = int(widget.height_hint * self.height)
+                    w_h = int(widget.height_hint * self.height)
                 else:
-                    height_mem += filling_widget_size
-                    widget.height = filling_widget_size
+                    w_h = filling_widget_size
+
+                widget.size = (w_w, w_h)
 
                 min_width = max(min_width, widget.min_width)
                 min_height += widget.min_height
-                height_mem += self._spacing
+                height_mem += self._spacing + w_h
 
             min_width += self._padding * 2
             min_height += self._padding * 2 + self._spacing * (len(self._widgets) - 1)
@@ -82,27 +78,26 @@ class LineLayout(GUILayout):
             for widget in self._widgets:
 
                 if widget.base_height is not None:
-                    widget.height = widget.base_height
+                    w_h = widget.base_height
                 elif widget.height_hint is not None:
-                    widget.height = int(widget.height_hint * self.height)
+                    w_h = int(widget.height_hint * self.height)
                 else:
-                    widget.height = int(self.height - self._padding * 2)
+                    w_h = int(self.height - self._padding * 2)
 
-                widget.pos = (width_mem, self._padding + (self.height - self._padding * 2 - widget.height) / 2)
+                widget.pos = (width_mem, self._padding + (self.height - self._padding * 2 - w_h) / 2)
 
                 if widget.base_width is not None:
-                    width_mem += widget.base_width
-                    widget.width = widget.base_width
+                    w_w = widget.base_width
                 elif widget.height_hint is not None:
-                    width_mem += widget.width_hint * self.width
-                    widget.width = int(widget.width_hint * self.width)
+                    w_w = int(widget.width_hint * self.width)
                 else:
-                    width_mem += filling_widget_size
-                    widget.width = filling_widget_size
+                    w_w = filling_widget_size
+
+                widget.size = (w_w, w_h)
 
                 min_height = max(min_height, widget.min_height)
                 min_width += widget.min_width
-                width_mem += self._spacing
+                width_mem += self._spacing + w_w
 
             min_height += self._padding * 2
             min_width += self._padding * 2 + self._spacing * (len(self._widgets) - 1)
