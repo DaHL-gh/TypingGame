@@ -103,6 +103,13 @@ class TextField(GUILayout):
 
         self.redraw()
 
+    def set_color(self, i: int | slice, color: tuple[float, float, float]):
+        if isinstance(i, int):
+            self._widgets[i].color = color
+        elif isinstance(i, slice):
+            for w in self._widgets[i]:
+                w.color = color
+
     def _add_char(self, char: str):
         glyph = self._font.get_glyph(ord(char))
 
