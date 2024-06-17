@@ -7,7 +7,6 @@ from abc import ABC, abstractmethod
 
 from .mglmanagers import ProgramManager, BufferManager
 from ..functions import get_rect_vertices
-from .ll import LinkedList
 
 
 class GUIObject:
@@ -124,6 +123,18 @@ class GUIObject:
         self.size = (self.width, max(self.min_height, value))
 
     @property
+    def center(self):
+        return self.center_x, self.center_y
+
+    @property
+    def center_x(self):
+        return self.width // 2
+
+    @property
+    def center_y(self):
+        return self.height // 2
+
+    @property
     def size_hint(self):
         return self._size_hint
 
@@ -237,7 +248,7 @@ class GUILayout(GUIObject, ABC):
         self._mem_texture = self.ctx.texture(size=self.size, components=4)
         self._framebuffer = self.ctx.framebuffer(self._mem_texture)
 
-        self._widgets = LinkedList()
+        self._widgets = []
 
     def _update_framebuffer(self) -> None:
         self._mem_texture.release()
@@ -326,7 +337,7 @@ class GUILayout(GUIObject, ABC):
         for widget in self._widgets:
             widget.release(keep_texture)
 
-        self._widgets = LinkedList()
+        self._widgets = []
 
     def release(self, keep_texture=False):
         super().release(keep_texture)
