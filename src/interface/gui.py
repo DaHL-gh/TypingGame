@@ -36,7 +36,7 @@ class GUI:
         self._show_bbox = False
 
         # WIDGETS
-        self._widgets: LinkedList[Child] = LinkedList()
+        self._widgets: list[Child] = []
 
         self.font = Font(name='CascadiaMono', char_size=20)
 
@@ -152,7 +152,7 @@ class GUI:
         for widget in self._widgets:
             widget.release()
 
-        self._widgets = LinkedList()
+        self._widgets = []
 
     def release(self) -> None:
         self._vertices.release()
