@@ -3,12 +3,12 @@ from .types import Child, Parent
 
 import numpy as np
 import moderngl as mgl
-from structlinks.LinkedList import LinkedList
 
 from .mglmanagers import ProgramManager, TextureManager, BufferManager
 from .slider import Slider
 from .text_render import TextField, Font
 from .linelayout import LineLayout
+from .ll import LinkedList
 
 
 class GUI:
@@ -36,7 +36,7 @@ class GUI:
         self._show_bbox = False
 
         # WIDGETS
-        self._widgets: list[Child] = []
+        self._widgets: LinkedList[Child] = LinkedList()
 
         self.font = Font(name='CascadiaMono', char_size=20)
 

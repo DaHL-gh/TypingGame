@@ -176,7 +176,6 @@ class TextField(GUILayout):
             self.redraw()
 
     def _keyboard_press(self, key: int, unicode: str):
-        print('press')
         if unicode == '\t':
             self.append_line("    ")
         elif unicode == '\x1b':  # escape

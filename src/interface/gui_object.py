@@ -3,11 +3,11 @@ from .types import Child, Parent
 
 import glm
 import moderngl as mgl
-from structlinks.LinkedList import LinkedList
 from abc import ABC, abstractmethod
 
 from .mglmanagers import ProgramManager, BufferManager
 from ..functions import get_rect_vertices
+from .ll import LinkedList
 
 
 class GUIObject:
@@ -197,10 +197,10 @@ class GUIObject:
         return None
 
     def keyboard_press(self, key: int, unicode: str):
-        return  self._keyboard_press(key, unicode)
+        return self._keyboard_press(key, unicode)
 
     def _keyboard_press(self, key: int, unicode: str):
-        return  None
+        return None
 
     # /////////////////////////////////////////////////// DISPLAY //////////////////////////////////////////////////////
 
@@ -237,7 +237,7 @@ class GUILayout(GUIObject, ABC):
         self._mem_texture = self.ctx.texture(size=self.size, components=4)
         self._framebuffer = self.ctx.framebuffer(self._mem_texture)
 
-        self._widgets: list[Child] = []
+        self._widgets = LinkedList()
 
     def _update_framebuffer(self) -> None:
         self._mem_texture.release()

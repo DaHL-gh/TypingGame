@@ -37,7 +37,6 @@ class LineLayout(GUILayout):
 
             height_mem = self._padding
             for widget in self._widgets:
-
                 if widget.base_width is not None:
                     w_w = widget.base_width
                 elif widget.width_hint is not None:
