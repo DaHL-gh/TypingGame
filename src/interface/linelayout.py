@@ -26,12 +26,18 @@ class LineLayout(GUILayout):
         if self.orientation == 'vertical':
 
             gathered_space = (self._padding * 2 +
-                              self._spacing * (len(self._widgets) - 1) +
-                              sum(self.fixed_sizes) +
-                              sum(self.th_sizes) * self.height)
+                              self._spacing * (len(self._widgets) - 1))
+
+            for widget in self._widgets:
+                if widget.base_height is not None:
+                    gathered_space += widget.height
+                elif widget.height_hint is not None:
+                    gathered_space += max(widget.height_hint * self.height, widget.min_height)
+                else:
+                    gathered_space += widget.min_height
 
             if self.free_size_w_count != 0:
-                filling_widget_size = int((self.width - gathered_space) / self.free_size_w_count)
+                filling_widget_size = int((self.height - gathered_space) / self.free_size_w_count)
             else:
                 filling_widget_size = 0
 
@@ -51,22 +57,28 @@ class LineLayout(GUILayout):
                 elif widget.height_hint is not None:
                     w_h = int(widget.height_hint * self.height)
                 else:
-                    w_h = filling_widget_size
+                    w_h = filling_widget_size + widget.min_height
 
                 widget.size = (w_w, w_h)
 
                 min_width = max(min_width, widget.min_width)
                 min_height += widget.min_height
-                height_mem += self._spacing + w_h
+                height_mem += w_h + self._spacing
 
             min_width += self._padding * 2
             min_height += self._padding * 2 + self._spacing * (len(self._widgets) - 1)
 
         else:
             gathered_space = (self._padding * 2 +
-                              self._spacing * (len(self._widgets) - 1) +
-                              sum(self.fixed_sizes) +
-                              sum(self.th_sizes) * self.width)
+                              self._spacing * (len(self._widgets) - 1))
+
+            for widget in self._widgets:
+                if widget.base_width is not None:
+                    gathered_space += widget.width
+                elif widget.width_hint is not None:
+                    gathered_space += max(widget.width_hint * self.width, widget.min_width)
+                else:
+                    gathered_space += widget.min_width
 
             if self.free_size_w_count != 0:
                 filling_widget_size = int((self.width - gathered_space) / self.free_size_w_count)
@@ -75,7 +87,6 @@ class LineLayout(GUILayout):
 
             width_mem = self._padding
             for widget in self._widgets:
-
                 if widget.base_height is not None:
                     w_h = widget.base_height
                 elif widget.height_hint is not None:
@@ -83,23 +94,23 @@ class LineLayout(GUILayout):
                 else:
                     w_h = int(self.height - self._padding * 2)
 
-                widget.pos = (width_mem, self._padding + (self.height - self._padding * 2 - w_h) / 2)
-
                 if widget.base_width is not None:
                     w_w = widget.base_width
-                elif widget.height_hint is not None:
+                elif widget.width_hint is not None:
                     w_w = int(widget.width_hint * self.width)
                 else:
-                    w_w = filling_widget_size
+                    w_w = filling_widget_size + widget.min_width
 
+                widget.pos = (width_mem, self._padding + (self.height - self._padding * 2 - w_h) / 2)
                 widget.size = (w_w, w_h)
 
                 min_height = max(min_height, widget.min_height)
                 min_width += widget.min_width
-                width_mem += self._spacing + w_w
+                width_mem += w_w + self._spacing
 
             min_height += self._padding * 2
             min_width += self._padding * 2 + self._spacing * (len(self._widgets) - 1)
+
         self._min_size = (min_width, min_height)
 
     def add(self, widget: Child):
