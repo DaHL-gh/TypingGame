@@ -1,10 +1,22 @@
 from __future__ import annotations
+
+import dataclasses
+from typing import Any
+
 import moderngl as mgl
 
 from .mglmanagers import TextureManager
 from .gui_object import GUILayout, GUIObject
 from .types import Parent, Child
 from .constants import *
+
+
+@dataclasses.dataclass
+class _Bind:
+    cls: Any
+    attr_name: str
+    min_v: int
+    max_v: int
 
 
 class Slider(GUILayout):
@@ -20,16 +32,35 @@ class Slider(GUILayout):
 
         self._orientation = orientation
 
+        # bar
         self._bar_width = bar_width
         self._bar = GUIObject(self, texture=bar_texture)
 
+        # slider
         self._slider_width = slider_width
         self._value = 0
         self._slider = GUIObject(self, texture=slider_texture)
 
+        # bind
+        self._binds = []
+
     @property
     def orientation(self):
         return self._orientation
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        self._value = value
+
+        for bind in self._binds:
+            setattr(bind.cls, bind.attr_name, int(self._value * (bind.max_v - bind.min_v) + bind.min_v))
+
+    def add_bind(self, cls_ref, attr_name: str, min_v, max_v) -> None:
+        self._binds.append(_Bind(cls_ref, attr_name, min_v, max_v))
 
     def _update_layout(self) -> None:
         if self.orientation == 'vertical':
@@ -51,22 +82,20 @@ class Slider(GUILayout):
     def _mouse_drag_func(self, button_name: str, mouse_pos: tuple[int, int], rel: tuple[int, int]) -> Child | None:
         if self.orientation == 'vertical':
             if mouse_pos[1] < self._slider_width / 2:
-                self._value = 0.
+                self.value = 0.
             elif mouse_pos[1] > self.height - self._slider_width / 2:
-                self._value = 1.
+                self.value = 1.
             else:
-                self._value = (mouse_pos[1] - self._slider_width / 2) / (self.height - self._slider_width)
+                self.value = (mouse_pos[1] - self._slider_width / 2) / (self.height - self._slider_width)
         else:
             if mouse_pos[0] < self._slider_width / 2:
-                self._value = 0.
+                self.value = 0.
             elif mouse_pos[0] > self.width - self._slider_width / 2:
-                self._value = 1.
+                self.value = 1.
             else:
-                self._value = (mouse_pos[0] - self._slider_width / 2) / (self.width - self._slider_width)
+                self.value = (mouse_pos[0] - self._slider_width / 2) / (self.width - self._slider_width)
 
         self._update_layout()
         self.redraw()
 
         return self
-
-
