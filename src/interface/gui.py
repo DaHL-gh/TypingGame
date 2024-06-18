@@ -8,7 +8,7 @@ from .mglmanagers import ProgramManager, TextureManager, BufferManager
 from .slider import Slider
 from .text_render import TextField, Font
 from .linelayout import LineLayout
-from .ll import LinkedList
+from .anchorlayout import AnchorLayout
 
 
 class GUI:
@@ -20,13 +20,13 @@ class GUI:
 
         self._ctx = window.ctx
 
-        BufferManager(self.ctx).create_buffer('UV', np.array(((0, 0), (0, 1), (1, 0), (1, 1)), dtype='float32'))
+        BufferManager(self.ctx).create('UV', np.array(((0, 0), (0, 1), (1, 0), (1, 1)), dtype='float32'))
 
         self._vertices = self.ctx.buffer(np.array(((-1, -1), (-1, 1), (1, -1), (1, 1)), dtype='float32'))
-        self._vao = self.ctx.vertex_array(ProgramManager(window.ctx).get_program('textured_box_reversed'),
+        self._vao = self.ctx.vertex_array(ProgramManager(window.ctx).get('textured_box_reversed'),
                                           [
                                               (self._vertices, '2f /v', 'in_position'),
-                                              (BufferManager(self.ctx).get_buffer('UV'), '2f /v', 'in_texture_cords')
+                                              (BufferManager(self.ctx).get('UV'), '2f /v', 'in_texture_cords')
                                           ])
 
         self._mem_texture = self.ctx.texture(size=self.size, components=4)
@@ -34,19 +34,19 @@ class GUI:
 
         # DEBUG
         self._show_bbox = False
+        self._needs_redraw = True
+        self._needs_update = True
 
         # WIDGETS
         self._widgets: list[Child] = []
 
-        self.font = Font(name='CascadiaMono', char_size=20)
+        self.font = Font(name='Inkfree', char_size=50)
 
-        ll = LineLayout(parent=self, orientation='horizontal', size=(200, 200), texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
-        ll2 = LineLayout(parent=ll, orientation='horizontal', texture=TextureManager(self.ctx).get_texture('chopper.jpg'))
+        self.ll2 = LineLayout(parent=self, size=(1000, 600),
+                              texture=TextureManager(self.ctx).get('chopper.jpg'))
 
-        TextField(parent=ll, font=self.font)
-        Slider(parent=ll2, size=(None, 80), orientation='vertical', slider_width=50)
-        Slider(parent=ll2, size=(None, 40))
-        Slider(parent=ll2, size=(None, 40))
+        TextField(parent=self.ll2, font=self.font)
+        Slider(parent=self.ll2)
 
     # ////////////////////////////////////////////////// PROPERTIES ////////////////////////////////////////////////////
 
@@ -74,8 +74,8 @@ class GUI:
         self._size = value
 
         self._update_framebuffer()
-        self._update_layout()
-        self.redraw()
+
+        self.update_request()
 
     @property
     def width(self):
@@ -107,11 +107,12 @@ class GUI:
     def add(self, widget: Child):
         self._widgets.append(widget)
 
-    def _update_layout(self) -> None:
-        self._framebuffer.use()
-
+    def update_layout(self):
         for widget in self._widgets:
             widget.size = widget.size
+
+        self._needs_update = False
+        self.redraw_request()
 
     def _update_framebuffer(self) -> None:
         self._mem_texture.release()
@@ -120,18 +121,30 @@ class GUI:
         self._framebuffer.release()
         self._framebuffer = self.ctx.framebuffer(self._mem_texture)
 
-    # /////////////////////////////////////////////////// DISPLAY //////////////////////////////////////////////////////
+    def update_request(self):
+        self._needs_update = True
+        self.redraw_request()
 
-    def redraw(self) -> None:
+    def redraw_request(self):
+        self._needs_redraw = True
+
+    def redraw(self):
+        if self._needs_update:
+            self.update_layout()
+
         self._framebuffer.use()
         self._framebuffer.clear()
 
         for widget in self._widgets:
             widget.draw()
 
-    def draw(self) -> None:
-        self.ctx.screen.use()
+        self._needs_redraw = False
 
+    def draw(self):
+        if self._needs_redraw or self._needs_update:
+            self.redraw()
+
+        self.ctx.screen.use()
         self._mem_texture.use()
         self._vao.render(mgl.TRIANGLE_STRIP)
 
@@ -144,7 +157,7 @@ class GUI:
         for widget in self._widgets:
             widget.toggle_bbox(self._show_bbox)
 
-        self.redraw()
+        self.redraw_request()
 
     # /////////////////////////////////////////////////// RELEASE //////////////////////////////////////////////////////
 

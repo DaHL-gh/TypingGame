@@ -53,15 +53,13 @@ class Char(GUIObject):
 
         self.glyph = glyph
         super().__init__(size=self.glyph.size,
-                         program=ProgramManager(kwargs['parent'].ctx).get_program('text_render'), **kwargs)
-
-        self.texture.filter = (mgl.NEAREST, mgl.NEAREST)
+                         program=ProgramManager(kwargs['parent'].ctx).get('text_render'), **kwargs)
 
     def _get_vao(self):
         self._vao = self.ctx.vertex_array(self._program,
                                           [
                                               (self._vertices, '2f /v', 'in_position'),
-                                              (BufferManager(self.ctx).get_buffer('UV'), '2f /v', 'in_texture_cords'),
+                                              (BufferManager(self.ctx).get('UV'), '2f /v', 'in_texture_cords'),
                                               (self._color_buffer, '3f /i', 'in_color')
                                           ])
 
@@ -101,8 +99,6 @@ class TextField(GUILayout):
         for char in line:
             self._add_char(char)
 
-        self.redraw()
-
     def set_color(self, i: int | slice, color: tuple[float, float, float]):
         if isinstance(i, int):
             self._widgets[i].color = color
@@ -132,10 +128,12 @@ class TextField(GUILayout):
         if char == '\r' or char == '\n':
             self._pen = (0, self._pen[1] + self.line_height)
 
+        self.redraw_request()
+
     def _update_layout(self) -> None:
         self.visible_widgets_count = 0
 
-        self._pen = [0, self.line_height]
+        self._pen = [0, self._font.char_size]
 
         for char in self._widgets:
             if self._pen[0] + char.glyph.size[0] + char.glyph.offset[0] > self.size[0]:
@@ -154,16 +152,7 @@ class TextField(GUILayout):
 
             self.visible_widgets_count += 1
 
-    def append_line(self, line: str):
-        for char in line:
-            self._add_char(char)
-
-        self.redraw()
-
-    def redraw(self):
-        self.framebuffer.use()
-        self.framebuffer.clear()
-
+    def _redraw(self):
         i = 0
         for widget in self._widgets:
             widget.draw()
@@ -172,15 +161,16 @@ class TextField(GUILayout):
             if i == self.visible_widgets_count:
                 break
 
-        self.parent.redraw()
+    def append_line(self, line: str):
+        for char in line:
+            self._add_char(char)
 
     def remove_last(self):
         if len(self._widgets) > 0:
             x = self._widgets.pop(len(self._widgets) - 1)
             x.release(keep_texture=True)
 
-            self._update_layout()
-            self.redraw()
+            self.redraw_request()
 
     def _keyboard_press(self, key: int, unicode: str):
         if unicode == '\t':
@@ -192,5 +182,5 @@ class TextField(GUILayout):
         else:
             self.append_line(unicode)
 
-    def _mouse_down_func(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
+    def _mouse_down(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
         return self

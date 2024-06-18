@@ -1,11 +1,12 @@
 from __future__ import annotations
 from .types import Child, Parent
 
+from typing import Callable
 import glm
 import moderngl as mgl
 from abc import ABC, abstractmethod
 
-from .mglmanagers import ProgramManager, BufferManager
+from .mglmanagers import ProgramManager, BufferManager, TextureManager
 from ..functions import get_rect_vertices
 
 
@@ -17,7 +18,9 @@ class GUIObject:
                  size_hint: tuple[float | None, float | None] = (None, None),
                  pos: tuple[int, int] = (0, 0),
                  program: mgl.Program | None = None,
-                 texture: mgl.Texture | None = None):
+                 texture: mgl.Texture | None = None,
+                 press_func: Callable | None = None,
+                 release_func: Callable | None = None):
 
         self.parent = parent
 
@@ -31,23 +34,26 @@ class GUIObject:
 
         # MGL ATTRIBUTES
         if texture is None:
-            texture = self.ctx.texture(size=self.size, components=1)
+            texture = TextureManager(self.ctx).get('None.png')
         self._texture = texture
 
         self._vertices = self.ctx.buffer(reserve=32)
         if program is None:
-            program = ProgramManager(self.ctx).get_program('textured_box')
+            program = ProgramManager(self.ctx).get('textured_box')
         self._program = program
 
         self._get_vao()
-        self._bbox_vao = self.ctx.vertex_array(ProgramManager(self.ctx).get_program('bbox_outline'),
+        self._bbox_vao = self.ctx.vertex_array(ProgramManager(self.ctx).get('bbox_outline'),
                                                [
                                                    (self._vertices, '2f /v', 'in_position'),
-                                                   (BufferManager(self.ctx).get_buffer('UV'), '2f /v',
+                                                   (BufferManager(self.ctx).get('UV'), '2f /v',
                                                     'in_texture_cords')
                                                ])
 
         self._update_vertices()
+
+        self._press_func = press_func
+        self._release_func = release_func
 
         self.show_bbox = self.parent.show_bbox
 
@@ -57,7 +63,7 @@ class GUIObject:
         self._vao = self.ctx.vertex_array(self._program,
                                           [
                                               (self._vertices, '2f /v', 'in_position'),
-                                              (BufferManager(self.ctx).get_buffer('UV'), '2f /v', 'in_texture_cords')
+                                              (BufferManager(self.ctx).get('UV'), '2f /v', 'in_texture_cords')
                                           ])
 
     # ////////////////////////////////////////////////// PROPERTIES ////////////////////////////////////////////////////
@@ -188,23 +194,27 @@ class GUIObject:
 
     def mouse_down(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
         mouse_pos = (mouse_pos[0] - self.window_pos[0], mouse_pos[1] - self.window_pos[1])
-        return self._mouse_down_func(button_name, mouse_pos, count)
+        if self._press_func is not None:
+            self._press_func()
+        return self._mouse_down(button_name, mouse_pos, count)
 
-    def _mouse_down_func(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
+    def _mouse_down(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
         return None
 
     def mouse_up(self, button_name: str, mouse_pos: tuple[int, int]) -> Child | None:
         mouse_pos = (mouse_pos[0] - self.window_pos[0], mouse_pos[1] - self.window_pos[1])
-        return self._mouse_up_func(button_name, mouse_pos)
+        if self._release_func is not None:
+            self._release_func()
+        return self._mouse_up(button_name, mouse_pos)
 
-    def _mouse_up_func(self, button_name: str, mouse_pos: tuple[int, int]) -> Child | None:
+    def _mouse_up(self, button_name: str, mouse_pos: tuple[int, int]) -> Child | None:
         return None
 
     def mouse_drag(self, button_name: str, mouse_pos: tuple[int, int], rel: tuple[int, int]) -> Child | None:
         mouse_pos = (mouse_pos[0] - self.window_pos[0], mouse_pos[1] - self.window_pos[1])
-        return self._mouse_drag_func(button_name, mouse_pos, rel)
+        return self._mouse_drag(button_name, mouse_pos, rel)
 
-    def _mouse_drag_func(self, button_name: str, mouse_pos: tuple[int, int], rel: tuple[int, int]) -> Child | None:
+    def _mouse_drag(self, button_name: str, mouse_pos: tuple[int, int], rel: tuple[int, int]) -> Child | None:
         return None
 
     def keyboard_press(self, key: int, unicode: str):
@@ -250,19 +260,13 @@ class GUILayout(GUIObject, ABC):
 
         self._widgets = []
 
-    def _update_framebuffer(self) -> None:
-        self._mem_texture.release()
-        self._mem_texture = self.ctx.texture(size=self.size, components=4)
-
-        self._framebuffer.release()
-        self._framebuffer = self.ctx.framebuffer(self._mem_texture)
-
-    @abstractmethod
-    def _update_layout(self) -> None:
-        pass
+        self._needs_redraw = True
+        self._needs_update = True
 
     def add(self, widget: Child):
         self._widgets.append(widget)
+
+    # ////////////////////////////////////////////////// PROPERTIES ////////////////////////////////////////////////////
 
     @property
     def framebuffer(self):
@@ -273,14 +277,13 @@ class GUILayout(GUIObject, ABC):
         GUIObject.size.fset(self, value)
 
         self._update_framebuffer()
-        self._update_layout()
-        self.redraw()
+        self.update_request()
 
     @GUIObject.pos.setter
     def pos(self, value: tuple[int, int]):
         GUIObject.pos.fset(self, value)
 
-        self.parent.redraw()
+        self.parent.redraw_request()
 
     # //////////////////////////////////////////////////// MOUSE ///////////////////////////////////////////////////////
 
@@ -304,17 +307,55 @@ class GUILayout(GUIObject, ABC):
 
     # /////////////////////////////////////////////////// DISPLAY //////////////////////////////////////////////////////
 
+    def update_request(self):
+        self._needs_update = True
+        self.parent.redraw_request()
+
+    def redraw_request(self):
+        self._needs_redraw = True
+        self.parent.redraw_request()
+
+    def _update_framebuffer(self) -> None:
+        self._mem_texture.release()
+        self._mem_texture = self.ctx.texture(size=self.size, components=4)
+
+        self._framebuffer.release()
+        self._framebuffer = self.ctx.framebuffer(self._mem_texture)
+
+    def update_layout(self):
+        self._update_layout()
+
+        self._needs_update = False
+        self.redraw_request()
+
+    @abstractmethod
+    def _update_layout(self) -> None:
+        pass
+
     def redraw(self):
+        if self._needs_update:
+            self.update_layout()
+
         self._framebuffer.use()
         self._framebuffer.clear()
 
+        self._redraw()
+
+        self._needs_redraw = False
+        self.parent.redraw_request()
+
+    def _redraw(self):
         for widget in self._widgets:
             widget.draw()
 
-        self.parent.redraw()
-
     def draw(self):
-        super().draw()
+        if self._needs_redraw or self._needs_update:
+            self.redraw()
+
+        self.parent.framebuffer.use()
+
+        self._texture.use()
+        self._vao.render(mgl.TRIANGLE_STRIP)
 
         self._mem_texture.use()
         self._vao.render(mgl.TRIANGLE_STRIP)
@@ -328,8 +369,6 @@ class GUILayout(GUIObject, ABC):
 
         for widget in self._widgets:
             widget.toggle_bbox(self._show_bbox)
-
-        self.redraw()
 
     # /////////////////////////////////////////////////// RELEASE //////////////////////////////////////////////////////
 

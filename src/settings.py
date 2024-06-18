@@ -6,7 +6,7 @@ BASE_DIR = os.getcwd()
 
 # WINDOW
 
-W_SIZE = (1000, 600)
+W_SIZE = (1200, 720)
 
 FPS = -1
 

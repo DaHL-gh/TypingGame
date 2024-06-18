@@ -28,7 +28,7 @@ class TextureManager:
 
         return cls._instances[ctx]
 
-    def get_texture(self, name: str) -> Texture:
+    def get(self, name: str) -> Texture:
         if name not in self.textures:
             img = pg.image.load(f'{BASE_DIR}\\data\\textures\\{name}')
             data = pg.image.tobytes(img, 'RGBA')
@@ -56,7 +56,7 @@ class ProgramManager:
 
         return cls._instances[ctx]
 
-    def get_program(self, name: str) -> Program:
+    def get(self, name: str) -> Program:
         if name not in self.programs:
             self.programs[name] = load_program(self.ctx, name)
 
@@ -81,17 +81,17 @@ class BufferManager:
 
         return cls._instances[ctx]
 
-    def create_buffer(self, name:str, data):
-        self.load_buffer(name, self.ctx.buffer(data))
+    def create(self, name: str, data):
+        self.upload(name, self.ctx.buffer(data))
 
-    def load_buffer(self, name: str, buffer: Buffer):
+    def upload(self, name: str, buffer: Buffer):
         if name in self.buffers:
             self.buffers[name].release()
             print(f'Buffer {name} in {self} was replaced')
 
         self.buffers[name] = buffer
 
-    def get_buffer(self, name: str) -> Buffer:
+    def get(self, name: str) -> Buffer:
         return self.buffers[name]
 
     def release_program(self, name) -> None:

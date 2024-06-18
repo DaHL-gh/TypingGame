@@ -59,6 +59,8 @@ class Slider(GUILayout):
         for bind in self._binds:
             setattr(bind.cls, bind.attr_name, int(self._value * (bind.max_v - bind.min_v) + bind.min_v))
 
+        self.update_request()
+
     def add_bind(self, cls_ref, attr_name: str, min_v, max_v) -> None:
         self._binds.append(_Bind(cls_ref, attr_name, min_v, max_v))
 
@@ -76,10 +78,10 @@ class Slider(GUILayout):
             self._bar.size = (self.width - self._slider_width, self._bar_width)
             self._bar.pos = (int(self._slider_width / 2), int((self.height - self._bar_width) / 2))
 
-    def _mouse_down_func(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
+    def _mouse_down(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
         return self
 
-    def _mouse_drag_func(self, button_name: str, mouse_pos: tuple[int, int], rel: tuple[int, int]) -> Child | None:
+    def _mouse_drag(self, button_name: str, mouse_pos: tuple[int, int], rel: tuple[int, int]) -> Child | None:
         if self.orientation == 'vertical':
             if mouse_pos[1] < self._slider_width / 2:
                 self.value = 0.
@@ -94,8 +96,3 @@ class Slider(GUILayout):
                 self.value = 1.
             else:
                 self.value = (mouse_pos[0] - self._slider_width / 2) / (self.width - self._slider_width)
-
-        self._update_layout()
-        self.redraw()
-
-        return self

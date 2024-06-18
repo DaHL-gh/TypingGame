@@ -132,10 +132,10 @@ class LineLayout(GUILayout):
 
         super().add(widget)
 
-    def _mouse_down_func(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
+    def _mouse_down(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
         return self
 
-    def _mouse_drag_func(self, button_name: str, mouse_pos: tuple[int, int], rel: tuple[int, int]) -> Child | None:
+    def _mouse_drag(self, button_name: str, mouse_pos: tuple[int, int], rel: tuple[int, int]) -> Child | None:
         if button_name == 'left':
             self.pos = tuple(self.pos[i] + rel[i] for i in (0, 1))
         elif button_name == 'right':
