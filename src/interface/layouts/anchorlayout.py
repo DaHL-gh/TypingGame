@@ -1,4 +1,4 @@
-from .gui_object import GUILayout
+from .linelayout import GUILayout
 
 
 class AnchorLayout(GUILayout):

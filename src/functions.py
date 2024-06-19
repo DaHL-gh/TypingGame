@@ -56,4 +56,3 @@ def get_part_of_frame_buffer(ctx: mgl.Context, pos: tuple[int, int], size: tuple
                           pos[0] * components: (pos[0] + size[0]) * components]
 
     return ctx.texture(size=size, components=components, data=np.squeeze(cut_data).tobytes())
-

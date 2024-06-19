@@ -1,19 +1,8 @@
 from moderngl import Context, Texture, Program, Buffer
 import pygame as pg
-from typing import Hashable
 
-from ..functions import load_program
-from ..settings import BASE_DIR
-
-
-class KWSingleton:
-    _instances = {}
-
-    def __new__(cls, key, *args, **kwargs):
-        if key not in cls._instances:
-            cls._instances[key] = super(KWSingleton, cls).__new__(cls)
-            print("created new instance:", key)
-        return cls._instances[key]
+from ...functions import load_program
+from ...settings import BASE_DIR
 
 
 class TextureManager:

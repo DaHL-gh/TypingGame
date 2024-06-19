@@ -1,7 +1,7 @@
 from __future__ import annotations
+from ..misc.types import Child
 
-from .gui_object import GUILayout
-from .types import Parent, Child
+from .gui_layout import GUILayout
 
 
 class LineLayout(GUILayout):
@@ -142,4 +142,3 @@ class LineLayout(GUILayout):
             self.size = tuple(self.size[i] + rel[i] for i in (0, 1))
 
         return self
-

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from ..interface.types import Child
+from ..interface.misc.types import Child
 
 mouse_data: dict[int, str] = {1: 'left', 2: 'middle', 3: 'right'}
 
@@ -16,6 +16,7 @@ class MouseClick:
         b_num = event.dict['button']
         self.b_name = mouse_data[b_num] if b_num in mouse_data else None
 
+# rearrangement
 
 @dataclass
 class MouseMove:

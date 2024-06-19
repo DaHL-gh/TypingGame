@@ -1,9 +1,11 @@
 from __future__ import annotations
-from .types import Child
+from .misc.types import Child
 
 import moderngl as mgl
 
-from .root import Root
+from .widgets.root import Root
+from .screen import Screen
+
 
 class GUI:
     def __init__(self, ctx: mgl.Context, size: tuple[int, int]):
@@ -11,6 +13,9 @@ class GUI:
         self._size = size
 
         self._root_widget = Root(self.ctx)
+        screen = Screen(self.ctx)
+        screen.build()
+        self._root_widget = screen.root
 
     # ////////////////////////////////////////////////// PROPERTIES ////////////////////////////////////////////////////
 

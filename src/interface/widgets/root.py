@@ -1,10 +1,10 @@
 from __future__ import annotations
-from .types import Child
+from ..misc.types import Child
 
 import numpy as np
 import moderngl as mgl
 
-from .mglmanagers import ProgramManager, BufferManager
+from ..misc.mglmanagers import ProgramManager, BufferManager
 
 
 class Root:

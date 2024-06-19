@@ -1,4 +1,4 @@
-from .gui_object import GUILayout
+from .gui_layout import GUILayout
 
 
 class FloatLayout(GUILayout):

@@ -1,15 +1,15 @@
 from __future__ import annotations
-from .types import Child, Parent
+from ..misc.types import Child
 
 import moderngl as mgl
 import freetype as ft
 import numpy as np
 import glm
 
-from .mglmanagers import ProgramManager, BufferManager
-from .gui_object import GUIObject, GUILayout
-from ..settings import MONITOR_DPI, BASE_DIR
-from .constants import *
+from ..misc.mglmanagers import ProgramManager, BufferManager
+from .gui_object import GUIObject
+from ..layouts.gui_layout import GUILayout
+from ...settings import MONITOR_DPI, BASE_DIR
 
 
 class Glyph:

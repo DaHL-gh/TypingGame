@@ -1,14 +1,13 @@
 from __future__ import annotations
+from ..misc.types import Parent, Child
 
 import dataclasses
 from typing import Any
-
 import moderngl as mgl
 
-from .mglmanagers import TextureManager
-from .gui_object import GUILayout, GUIObject
-from .types import Parent, Child
-from .constants import *
+from ..misc.mglmanagers import TextureManager
+from .gui_object import GUIObject
+from ..layouts.gui_layout import GUILayout
 
 
 @dataclasses.dataclass
