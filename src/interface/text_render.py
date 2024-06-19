@@ -55,8 +55,8 @@ class Char(GUIObject):
         super().__init__(size=self.glyph.size,
                          program=ProgramManager(kwargs['parent'].ctx).get('text_render'), **kwargs)
 
-    def _get_vao(self):
-        self._vao = self.ctx.vertex_array(self._program,
+    def _get_vao(self) -> mgl.VertexArray:
+        return self.ctx.vertex_array(self._program,
                                           [
                                               (self._vertices, '2f /v', 'in_position'),
                                               (BufferManager(self.ctx).get('UV'), '2f /v', 'in_texture_cords'),
@@ -64,7 +64,7 @@ class Char(GUIObject):
                                           ])
 
     @property
-    def color(self):
+    def color(self) -> tuple[float, float, float]:
         return self._color
 
     @color.setter
@@ -88,7 +88,7 @@ class TextField(GUILayout):
         self.line = line
 
     @property
-    def line(self):
+    def line(self) -> str:
         return self._line
 
     @line.setter
@@ -99,14 +99,14 @@ class TextField(GUILayout):
         for char in line:
             self._add_char(char)
 
-    def set_color(self, i: int | slice, color: tuple[float, float, float]):
+    def set_color(self, i: int | slice, color: tuple[float, float, float]) -> None:
         if isinstance(i, int):
             self._widgets[i].color = color
         elif isinstance(i, slice):
             for w in self._widgets[i]:
                 w.color = color
 
-    def _add_char(self, char: str):
+    def _add_char(self, char: str) -> None:
         glyph = self._font.get_glyph(ord(char))
 
         if self._pen[0] + glyph.size[0] + glyph.offset[0] > self.size[0]:
@@ -152,7 +152,7 @@ class TextField(GUILayout):
 
             self.visible_widgets_count += 1
 
-    def _redraw(self):
+    def _redraw(self) -> None:
         i = 0
         for widget in self._widgets:
             widget.draw()
@@ -161,18 +161,18 @@ class TextField(GUILayout):
             if i == self.visible_widgets_count:
                 break
 
-    def append_line(self, line: str):
+    def append_line(self, line: str) -> None:
         for char in line:
             self._add_char(char)
 
-    def remove_last(self):
+    def remove_last(self) -> None:
         if len(self._widgets) > 0:
             x = self._widgets.pop(len(self._widgets) - 1)
             x.release(keep_texture=True)
 
-            self.redraw_request()
+            self.update_request()
 
-    def _keyboard_press(self, key: int, unicode: str):
+    def _keyboard_press(self, key: int, unicode: str) -> None:
         if unicode == '\t':
             self.append_line("    ")
         elif unicode == '\x1b':  # escape

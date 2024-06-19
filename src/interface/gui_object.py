@@ -26,7 +26,7 @@ class GUIObject:
 
         # FORM
         self._size = tuple(int(size[i]) if size[i] is not None else 1 for i in (0, 1))
-        self._min_size = tuple(max(int(min_size[i]), self._size[i]) if min_size[i] is not None else 1 for i in (0, 1))
+        self._min_size = tuple(max(int(min_size[i]), self._size[i]) if min_size[i] is not None else 1 for i in range(2))
         self._base_size = size
         self._size_hint = size_hint
 
@@ -42,7 +42,7 @@ class GUIObject:
             program = ProgramManager(self.ctx).get('textured_box')
         self._program = program
 
-        self._get_vao()
+        self._vao = self._get_vao()
         self._bbox_vao = self.ctx.vertex_array(ProgramManager(self.ctx).get('bbox_outline'),
                                                [
                                                    (self._vertices, '2f /v', 'in_position'),
@@ -59,29 +59,29 @@ class GUIObject:
 
         self.parent.add(self)
 
-    def _get_vao(self):
-        self._vao = self.ctx.vertex_array(self._program,
-                                          [
-                                              (self._vertices, '2f /v', 'in_position'),
-                                              (BufferManager(self.ctx).get('UV'), '2f /v', 'in_texture_cords')
-                                          ])
+    def _get_vao(self) -> mgl.VertexArray:
+        return self.ctx.vertex_array(self._program,
+                                     [
+                                         (self._vertices, '2f /v', 'in_position'),
+                                         (BufferManager(self.ctx).get('UV'), '2f /v', 'in_texture_cords')
+                                     ])
 
     # ////////////////////////////////////////////////// PROPERTIES ////////////////////////////////////////////////////
 
     @property
-    def ctx(self):
+    def ctx(self) -> mgl.Context:
         return self.parent.ctx
 
     @property
-    def texture(self):
+    def texture(self) -> mgl.Texture:
         return self._texture
 
     @property
-    def program(self):
+    def program(self) -> mgl.Program:
         return self._program
 
     @property
-    def show_bbox(self):
+    def show_bbox(self) -> bool:
         return self._show_bbox
 
     @show_bbox.setter
@@ -89,7 +89,7 @@ class GUIObject:
         self._show_bbox = value
 
     @property
-    def pos(self):
+    def pos(self) -> tuple[int, int]:
         return self._pos
 
     @pos.setter
@@ -99,11 +99,11 @@ class GUIObject:
         self._update_vertices()
 
     @property
-    def window_pos(self):
+    def window_pos(self) -> tuple[int, int]:
         return self.parent.window_pos[0] + self._pos[0], self.parent.window_pos[1] + self._pos[1]
 
     @property
-    def size(self):
+    def size(self) -> tuple[int, int]:
         return self._size
 
     @size.setter
@@ -113,7 +113,7 @@ class GUIObject:
         self._update_vertices()
 
     @property
-    def width(self):
+    def width(self) -> int:
         return self._size[0]
 
     @width.setter
@@ -121,7 +121,7 @@ class GUIObject:
         self.size = (max(self.min_width, value), self.height)
 
     @property
-    def height(self):
+    def height(self) -> int:
         return self._size[1]
 
     @height.setter
@@ -129,51 +129,51 @@ class GUIObject:
         self.size = (self.width, max(self.min_height, value))
 
     @property
-    def center(self):
+    def center(self) -> tuple[int, int]:
         return self.center_x, self.center_y
 
     @property
-    def center_x(self):
+    def center_x(self) -> int:
         return self.width // 2
 
     @property
-    def center_y(self):
+    def center_y(self) -> int:
         return self.height // 2
 
     @property
-    def size_hint(self):
+    def size_hint(self) -> tuple[float | None, float | None]:
         return self._size_hint
 
     @property
-    def width_hint(self):
+    def width_hint(self) -> float | None:
         return self.size_hint[0]
 
     @property
-    def height_hint(self):
+    def height_hint(self) -> float | None:
         return self.size_hint[1]
 
     @property
-    def base_size(self):
+    def base_size(self) -> tuple[int | None, int | None]:
         return self._base_size
 
     @property
-    def base_width(self):
+    def base_width(self) -> int | None:
         return self._base_size[0]
 
     @property
-    def base_height(self):
+    def base_height(self) -> int | None:
         return self._base_size[1]
 
     @property
-    def min_size(self):
+    def min_size(self) -> tuple[int, int]:
         return self._min_size
 
     @property
-    def min_width(self):
+    def min_width(self) -> int:
         return self._min_size[0]
 
     @property
-    def min_height(self):
+    def min_height(self) -> int:
         return self._min_size[1]
 
     # //////////////////////////////////////////////////// SMTNG ///////////////////////////////////////////////////////
@@ -266,6 +266,8 @@ class GUILayout(GUIObject, ABC):
     def add(self, widget: Child):
         self._widgets.append(widget)
 
+        self.update_request()
+
     # ////////////////////////////////////////////////// PROPERTIES ////////////////////////////////////////////////////
 
     @property
@@ -283,7 +285,7 @@ class GUILayout(GUIObject, ABC):
     def pos(self, value: tuple[int, int]):
         GUIObject.pos.fset(self, value)
 
-        self.parent.redraw_request()
+        self.update_request()
 
     # //////////////////////////////////////////////////// MOUSE ///////////////////////////////////////////////////////
 
@@ -326,11 +328,10 @@ class GUILayout(GUIObject, ABC):
         self._update_layout()
 
         self._needs_update = False
-        self.redraw_request()
 
     @abstractmethod
     def _update_layout(self) -> None:
-        pass
+        ...
 
     def redraw(self):
         if self._needs_update:
@@ -342,7 +343,6 @@ class GUILayout(GUIObject, ABC):
         self._redraw()
 
         self._needs_redraw = False
-        self.parent.redraw_request()
 
     def _redraw(self):
         for widget in self._widgets:
@@ -369,6 +369,8 @@ class GUILayout(GUIObject, ABC):
 
         for widget in self._widgets:
             widget.toggle_bbox(self._show_bbox)
+
+        self.redraw_request()
 
     # /////////////////////////////////////////////////// RELEASE //////////////////////////////////////////////////////
 

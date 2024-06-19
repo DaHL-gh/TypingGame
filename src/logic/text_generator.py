@@ -64,3 +64,10 @@ class TextGenerator:
         rand_int = randint(int(self._prefix_sum[0]), int(self._prefix_sum[-1]))
 
         return self._words[self._binary_search(rand_int, self._prefix_sum)]
+
+
+if __name__ == '__main__':
+    txt_gen = TextGenerator()
+
+    for _ in range(200):
+        print(txt_gen.get(), end=' ')

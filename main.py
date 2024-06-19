@@ -29,7 +29,7 @@ class Window:
         # OTHER ATTRIBUTES
         self.clock = pg.time.Clock()
         self.event_handler = EventHandler(self)
-        self.gui = GUI(self)
+        self.gui = GUI(self.ctx, self.size)
 
     def draw(self):
         self.gui.draw()
