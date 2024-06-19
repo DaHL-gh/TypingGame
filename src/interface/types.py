@@ -1,12 +1,18 @@
 from typing import TypeVar, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .gui import GUI
-    from .gui_object import GUIObject, GUILayout
-    from .text_render import TextField, Char
+    from .root import Root
 
-    Parent = TypeVar('Parent', GUI, GUILayout)
-    Child = TypeVar('Child', GUIObject, GUILayout, TextField)
+    from .linelayout import LineLayout
+    from .anchorlayout import AnchorLayout
+    from .floatlayout import FloatLayout
+
+    from .gui_object import GUIObject
+    from .text_render import TextField
+    from .slider import Slider
+
+    Parent = TypeVar('Parent', Root, LineLayout, AnchorLayout, FloatLayout)
+    Child = TypeVar('Child', LineLayout, AnchorLayout, FloatLayout, GUIObject, TextField, Slider)
 
 else:
     Parent = None
