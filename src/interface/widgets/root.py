@@ -1,20 +1,23 @@
 from __future__ import annotations
 from ..misc.types import Child
 
+from abc import abstractmethod, ABC
 import numpy as np
 import moderngl as mgl
 
+from ..gui import GUI
 from ..misc.mglmanagers import ProgramManager, BufferManager
 
 
-class Root:
-    def __init__(self, ctx):
+class Root(ABC):
+    def __init__(self, ctx, id):
+        self._id = id
         self._size = (1, 1)
 
         # MGL ATTRIBUTES
         self._ctx = ctx
 
-        BufferManager(self.ctx).create('UV', np.array(((0, 0), (0, 1), (1, 0), (1, 1)), dtype='float32'))
+
 
         self._vertices = self.ctx.buffer(np.array(((-1, 1), (-1, -1), (1, 1), (1, -1)), dtype='float32'))
         self._vao = self.ctx.vertex_array(ProgramManager(self.ctx).get('textured_box'),
@@ -27,13 +30,16 @@ class Root:
         self._framebuffer = self.ctx.framebuffer(self._mem_texture)
 
         # DEBUG
-        self._show_bbox = True
+        self._show_bbox = False
 
         self._needs_redraw = True
         self._needs_update = True
 
         # WIDGET
         self._widget: Child | None = None
+
+        self.gui = GUI(ctx)
+        self.gui.add(self)
 
     # //////////////////////////////////////////////////// WIDGETS /////////////////////////////////////////////////////
 
@@ -44,6 +50,17 @@ class Root:
         self._widget = widget
         self.update_request()
 
+    def use(self):
+        self.size = self.gui.size
+        self.gui.set_root(self.id)
+
+    @abstractmethod
+    def build(self) -> None:
+        pass
+
+    def __getattr__(self, item):
+        return getattr(self._widget, item)
+
     # ////////////////////////////////////////////////// PROPERTIES ////////////////////////////////////////////////////
 
     @property
@@ -51,8 +68,16 @@ class Root:
         return self._ctx
 
     @property
+    def id(self):
+        return self._id
+
+    @property
     def framebuffer(self) -> mgl.Framebuffer:
         return self._framebuffer
+
+    @property
+    def widget(self):
+        return self._widget
 
     @property
     def show_bbox(self) -> bool:
@@ -72,7 +97,7 @@ class Root:
 
         self._update_framebuffer()
 
-        self.update_layout()
+        self.update_request()
 
     @property
     def width(self) -> int:
@@ -98,14 +123,15 @@ class Root:
 
     # /////////////////////////////////////////////////// UPDATE ///////////////////////////////////////////////////////
 
-    def update_layout(self) -> None:
+    def update_layout(self):
         if self._widget is None:
             return
 
-        self._widget.pos = (0, 0)
-        self._widget.size = self.size
+        if self._needs_update or True:
+            self._widget.pos = (0, 0)
+            self._widget.size = self.size
 
-        self._needs_update = False
+            self._needs_update = False
 
     def _update_framebuffer(self) -> None:
         self._mem_texture.release()
@@ -115,31 +141,35 @@ class Root:
         self._framebuffer = self.ctx.framebuffer(self._mem_texture)
 
     def update_request(self) -> None:
-        self._needs_update = True
-        self.redraw_request()
+        if not self._needs_update:
+            self._needs_update = True
+            self.redraw_request()
 
     def redraw_request(self) -> None:
-        self._needs_redraw = True
+        if not self._needs_redraw:
+            self._needs_redraw = True
 
     # /////////////////////////////////////////////////// DISPLAY //////////////////////////////////////////////////////
 
     def redraw(self) -> None:
-        if self._needs_update:
+        if self._needs_redraw:
             self.update_layout()
 
-        self._framebuffer.use()
-        self._framebuffer.clear()
+            self._framebuffer.use()
+            self._framebuffer.clear()
 
-        self._widget.draw()
+            self._widget.draw()
 
-        self._needs_redraw = False
+            self.update_layout()
+
+            self._needs_redraw = False
 
     def draw(self) -> None:
         if self._widget is None:
             return
 
-        if self._needs_redraw or self._needs_update:
-            self.redraw()
+        self.update_layout()
+        self.redraw()
 
         self.ctx.screen.use()
         self._mem_texture.use()

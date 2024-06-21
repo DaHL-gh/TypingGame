@@ -5,7 +5,6 @@ import dataclasses
 from typing import Any
 import moderngl as mgl
 
-from ..misc.mglmanagers import TextureManager
 from .gui_object import GUIObject
 from ..layouts.gui_layout import GUILayout
 
@@ -33,15 +32,15 @@ class Slider(GUILayout):
 
         # bar
         self._bar_width = bar_width
-        self._bar = GUIObject(self, texture=bar_texture)
+        self._bar = GUIObject(parent=self, id='bar', texture=bar_texture)
 
         # slider
         self._slider_width = slider_width
         self._value = 0
-        self._slider = GUIObject(self, texture=slider_texture)
+        self._slider = GUIObject(parent=self, id='slider', texture=slider_texture)
 
         # bind
-        self._binds = []
+        self._binds: list[_Bind] = []
 
     @property
     def orientation(self):

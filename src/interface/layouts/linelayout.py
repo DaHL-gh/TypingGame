@@ -43,6 +43,7 @@ class LineLayout(GUILayout):
 
             height_mem = self._padding
             for widget in self._widgets:
+
                 if widget.base_width is not None:
                     w_w = widget.base_width
                 elif widget.width_hint is not None:
@@ -111,7 +112,7 @@ class LineLayout(GUILayout):
             min_height += self._padding * 2
             min_width += self._padding * 2 + self._spacing * (len(self._widgets) - 1)
 
-        self._min_size = (min_width, min_height)
+        self.min_size = (min_width, min_height)
 
     def add(self, widget: Child):
         if self.orientation == 'vertical':

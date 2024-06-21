@@ -1,5 +1,4 @@
 from __future__ import annotations
-from ..misc.types import Child
 
 import moderngl as mgl
 import freetype as ft
@@ -8,7 +7,6 @@ import glm
 
 from ..misc.mglmanagers import ProgramManager, BufferManager
 from .gui_object import GUIObject
-from ..layouts.gui_layout import GUILayout
 from ...settings import MONITOR_DPI, BASE_DIR
 
 
@@ -46,22 +44,26 @@ class Font:
         return self.loaded_glyphs[code]
 
 
-class Char(GUIObject):
+class _Char(GUIObject):
     def __init__(self, glyph: Glyph, color: tuple[float, float, float] = (1, 1, 1), **kwargs):
         self._color = color
         self._color_buffer = kwargs['parent'].ctx.buffer(glm.vec3(self._color))
 
-        self.glyph = glyph
-        super().__init__(size=self.glyph.size,
+        self._glyph = glyph
+        super().__init__(size=self._glyph.size,
                          program=ProgramManager(kwargs['parent'].ctx).get('text_render'), **kwargs)
 
     def _get_vao(self) -> mgl.VertexArray:
         return self.ctx.vertex_array(self._program,
-                                          [
-                                              (self._vertices, '2f /v', 'in_position'),
-                                              (BufferManager(self.ctx).get('UV'), '2f /v', 'in_texture_cords'),
-                                              (self._color_buffer, '3f /i', 'in_color')
-                                          ])
+                                     [
+                                         (self._vertices, '2f /v', 'in_position'),
+                                         (BufferManager(self.ctx).get('UV'), '2f /v', 'in_texture_cords'),
+                                         (self._color_buffer, '3f /i', 'in_color')
+                                     ])
+
+    @property
+    def glyph(self):
+        return self._glyph
 
     @property
     def color(self) -> tuple[float, float, float]:
@@ -72,115 +74,7 @@ class Char(GUIObject):
         self._color = value
         self._color_buffer.write(glm.vec3(self._color))
 
+    def release(self, keep_texture=False):
+        self._color_buffer.release()
 
-class TextField(GUILayout):
-    def __init__(self, font: Font, line: str = '', **kwargs):
-        super().__init__(**kwargs)
-
-        self._font = font
-
-        self._pen = (0, 0)
-        self.line_height = self._font.char_size * 2
-        self.visible_widgets_count = 0
-
-        self._bitmap_textures: dict[str: mgl.Texture] = {}
-
-        self.line = line
-
-    @property
-    def line(self) -> str:
-        return self._line
-
-    @line.setter
-    def line(self, line: str):
-        self._release_widgets(keep_texture=True)
-
-        self._line = line
-        for char in line:
-            self._add_char(char)
-
-    def set_color(self, i: int | slice, color: tuple[float, float, float]) -> None:
-        if isinstance(i, int):
-            self._widgets[i].color = color
-        elif isinstance(i, slice):
-            for w in self._widgets[i]:
-                w.color = color
-
-    def _add_char(self, char: str) -> None:
-        glyph = self._font.get_glyph(ord(char))
-
-        if self._pen[0] + glyph.size[0] + glyph.offset[0] > self.size[0]:
-            self._pen = (0, self._pen[1] + self.line_height)
-
-        if char not in self._bitmap_textures:
-            self._bitmap_textures[char] = self.ctx.texture(size=glyph.size, data=glyph.bitmap, components=1)
-            self._bitmap_textures[char].filter = (mgl.NEAREST, mgl.NEAREST)
-
-        pos = (self._pen[0] + glyph.offset[0],
-               self._pen[1] - glyph.offset[1] - glyph.size[1])
-
-        self.visible_widgets_count += 1
-
-        self._pen = (self._pen[0] + glyph.horizontal_advance, self._pen[1])
-
-        Char(parent=self, pos=pos, glyph=glyph, texture=self._bitmap_textures[char])
-
-        if char == '\r' or char == '\n':
-            self._pen = (0, self._pen[1] + self.line_height)
-
-        self.redraw_request()
-
-    def _update_layout(self) -> None:
-        self.visible_widgets_count = 0
-
-        self._pen = [0, self._font.char_size]
-
-        for char in self._widgets:
-            if self._pen[0] + char.glyph.size[0] + char.glyph.offset[0] > self.size[0]:
-
-                if self._pen[1] > self.height:
-                    break
-                self._pen = (0, self._pen[1] + self.line_height)
-
-            char.pos = (self._pen[0] + char.glyph.offset[0],
-                        self._pen[1] - char.glyph.offset[1] - char.glyph.size[1])
-
-            self._pen = (self._pen[0] + char.glyph.horizontal_advance, self._pen[1])
-
-            if char.glyph.symbol == '\r' or char.glyph.symbol == '\n':
-                self._pen = (0, self._pen[1] + self.line_height)
-
-            self.visible_widgets_count += 1
-
-    def _redraw(self) -> None:
-        i = 0
-        for widget in self._widgets:
-            widget.draw()
-
-            i += 1
-            if i == self.visible_widgets_count:
-                break
-
-    def append_line(self, line: str) -> None:
-        for char in line:
-            self._add_char(char)
-
-    def remove_last(self) -> None:
-        if len(self._widgets) > 0:
-            x = self._widgets.pop(len(self._widgets) - 1)
-            x.release(keep_texture=True)
-
-            self.update_request()
-
-    def _keyboard_press(self, key: int, unicode: str) -> None:
-        if unicode == '\t':
-            self.append_line("    ")
-        elif unicode == '\x1b':  # escape
-            pass
-        elif unicode == '\b':  # backspace
-            self.remove_last()
-        else:
-            self.append_line(unicode)
-
-    def _mouse_down(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
-        return self
+        super().release(keep_texture)

@@ -7,7 +7,7 @@ out vec4 fragColor;
 uniform vec2 w_size;
 
 void main() {
-    float opacity = 0.3;
+    float opacity = 0.1;
 
     int width = 2;
 

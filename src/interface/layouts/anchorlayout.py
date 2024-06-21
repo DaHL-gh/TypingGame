@@ -33,10 +33,10 @@ class AnchorLayout(GUILayout):
 
         min_w = min_h = 0
         for widget in self._widgets:
-            widget.pos = (self.width * y_mod - widget.width * y_mod,
-                          self.height * x_mod - widget.height * x_mod)
+            widget.pos = (self.width * x_mod - widget.width * x_mod,
+                          self.height * y_mod - widget.height * y_mod)
 
-            min_w = max(min_w, widget.width)
-            min_h = max(min_h, widget.height)
+            min_w = max(min_w, widget.min_width)
+            min_h = max(min_h, widget.min_height)
 
-        self._min_size = (min_w, min_h)
+        self.min_size = (min_w, min_h)

@@ -10,21 +10,29 @@ from ..widgets.gui_object import GUIObject
 
 class GUILayout(GUIObject, ABC):
     def __init__(self, **kwargs):
+        self._widgets = []
+        self._widget_ids = {}
 
         super().__init__(**kwargs)
 
         self._mem_texture = self.ctx.texture(size=self.size, components=4)
         self._framebuffer = self.ctx.framebuffer(self._mem_texture)
 
-        self._widgets = []
-
         self._needs_redraw = True
         self._needs_update = True
 
+    # /////////////////////////////////////////////////// WIDGETS //////////////////////////////////////////////////////
+
     def add(self, widget: Child):
         self._widgets.append(widget)
+        self._widget_ids[widget.id] = widget
 
         self.update_request()
+
+    def __getattr__(self, item):
+        if item not in self._widget_ids:
+            raise NameError(f'No item: {item} in widget ids: {self._widget_ids.items()} of {self}')
+        return self._widget_ids[item]
 
     # ////////////////////////////////////////////////// PROPERTIES ////////////////////////////////////////////////////
 
@@ -43,7 +51,7 @@ class GUILayout(GUIObject, ABC):
     def pos(self, value: tuple[int, int]):
         GUIObject.pos.fset(self, value)
 
-        self.update_request()
+        self.redraw_request()
 
     # //////////////////////////////////////////////////// MOUSE ///////////////////////////////////////////////////////
 
@@ -65,15 +73,17 @@ class GUILayout(GUIObject, ABC):
 
         return super().mouse_up(button_name, mouse_pos)
 
-    # /////////////////////////////////////////////////// DISPLAY //////////////////////////////////////////////////////
+    # /////////////////////////////////////////////////// UPDATE ///////////////////////////////////////////////////////
 
     def update_request(self):
-        self._needs_update = True
-        self.parent.redraw_request()
+        if not self._needs_update:
+            self._needs_update = True
+            self.parent.redraw_request()
 
     def redraw_request(self):
-        self._needs_redraw = True
-        self.parent.redraw_request()
+        if not self._needs_redraw:
+            self._needs_redraw = True
+            self.parent.redraw_request()
 
     def _update_framebuffer(self) -> None:
         self._mem_texture.release()
@@ -83,32 +93,38 @@ class GUILayout(GUIObject, ABC):
         self._framebuffer = self.ctx.framebuffer(self._mem_texture)
 
     def update_layout(self):
-        self._update_layout()
+        if self._needs_update or True:
 
-        self._needs_update = False
+            for w in self._widgets:
+                if hasattr(w, 'update_layout'):
+                    w.update_layout()
+
+            self._update_layout()
+
+            self._needs_update = False
 
     @abstractmethod
     def _update_layout(self) -> None:
         ...
 
+    # /////////////////////////////////////////////////// DISPLAY //////////////////////////////////////////////////////
+
     def redraw(self):
-        if self._needs_update:
-            self.update_layout()
+        if self._needs_redraw:
+            self._framebuffer.use()
+            self._framebuffer.clear()
 
-        self._framebuffer.use()
-        self._framebuffer.clear()
+            self._redraw()
 
-        self._redraw()
-
-        self._needs_redraw = False
+            self._needs_redraw = False
 
     def _redraw(self):
         for widget in self._widgets:
             widget.draw()
 
     def draw(self):
-        if self._needs_redraw or self._needs_update:
-            self.redraw()
+        self.update_layout()
+        self.redraw()
 
         self.parent.framebuffer.use()
 
@@ -137,6 +153,7 @@ class GUILayout(GUIObject, ABC):
             widget.release(keep_texture)
 
         self._widgets = []
+        self._widget_ids = {}
 
     def release(self, keep_texture=False):
         super().release(keep_texture)

@@ -16,7 +16,6 @@ class MouseClick:
         b_num = event.dict['button']
         self.b_name = mouse_data[b_num] if b_num in mouse_data else None
 
-# rearrangement
 
 @dataclass
 class MouseMove:
