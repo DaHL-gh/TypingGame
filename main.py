@@ -3,7 +3,11 @@ import pygame as pg
 import moderngl as mgl
 from structlinks.LinkedList import LinkedList
 
-from main_screen import MainScreen, Logo
+from test_screen import Test
+
+from logo_screen import Logo
+from main_screen import MainScreen
+from result_screen import Results
 from src.interface.gui import GUI
 from src.interface.misc.mglmanagers import BufferManager
 from src.logic.event_handler import EventHandler
@@ -39,8 +43,11 @@ class Window:
         # GUI
         self.gui = GUI(self.ctx)
 
-        Logo(self.ctx).use()
-        MainScreen(self.ctx)
+        Test(self.ctx).use()
+
+        # Logo(self.ctx).use()
+        # MainScreen(self.ctx)
+        # Results(self.ctx)
 
         self.gui.build()
 

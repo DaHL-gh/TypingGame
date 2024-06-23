@@ -8,7 +8,8 @@ from src.interface.widgets.gui_object import GUIObject
 from src.interface.widgets.root import Root
 from src.interface.layouts.anchorlayout import AnchorLayout
 from src.interface.layouts.linelayout import LineLayout
-from src.interface.widgets.text_input import TextInput, Font, TextLine
+from src.interface.widgets.text_line import TextLine
+from src.interface.widgets.text_input import TextInput, Font
 from src.interface.misc.animation_manager import Animation
 from src.logic.text_generator import TextGenerator
 from src.logic.levenshtein_distance import levenshtein_distance
@@ -18,9 +19,11 @@ class MainScreen(Root):
     def __init__(self, ctx):
         super().__init__(ctx, 'main')
 
-        self.all_presses = 0
+        self.correct_presses = 0
         self.wrong_presses = 0
+        self.wpm_data = 0
         self.correct_words_count = 0
+        self.wrong_words_count = 0
 
         self.current_word_num = 0
         self.is_game_on = False
@@ -39,7 +42,7 @@ class MainScreen(Root):
         char_size = 30
         font = Font(name='CascadiaMono', char_size=char_size)
 
-        al = AnchorLayout(parent=self, id='al')
+        al = AnchorLayout(parent=self)
         # [
         ll = LineLayout(parent=al, size_hint=(0.8, 0.6), padding=20, spacing=40, orientation='vertical',
                         id='central_ll')
@@ -58,7 +61,6 @@ class MainScreen(Root):
 
         input_layout = LineLayout(parent=ll, size=(None, int(char_size * 1.5)), padding=0, spacing=0,
                                   orientation='horizontal', id='input_ll')
-
         # ----[
 
         def input_validation():
@@ -70,9 +72,13 @@ class MainScreen(Root):
             if input_word != '' and input_word.lower() == current_word_data.word:
                 color = (0, 1, 0)
                 self.correct_words_count += 1
+                self.wpm_data += 1
             else:
                 color = (1, 0, 0)
-                self.correct_words_count += levenshtein_distance(current_word_data.word, input_word)
+                self.correct_words_count += 1
+                ld = levenshtein_distance(current_word_data.word, input_word)
+                self.wpm_data += ld
+                print(ld)
             current_line.set_color(i=slice(current_word_data.start, current_word_data.end), color=color)
 
             # пропуск строки
@@ -104,8 +110,8 @@ class MainScreen(Root):
 
         GUIObject(parent=input_layout, size=(int(char_size * 1.5), int(char_size * 1.5)), press_func=self.reset_game,
                   pressable=True, id='reset_button', texture=TextureManager(self.ctx).get('reset_button.png'))
-
         # ]----
+
         # ]--
         # ]
 
@@ -149,7 +155,7 @@ class Timer(TextLine):
         super().__init__(font, **kwargs)
 
     def _get_animation(self) -> Animation:
-        return Animation(id='timer', func=self._animation_func, start=pg.time.get_ticks(), interval=1000, end=5_000)
+        return Animation(id='timer', func=self._animation_func, start=pg.time.get_ticks(), interval=1000, end=60_000)
 
     def _animation_func(self, start: int, time: int, end: int):
         self.line = f'{(end + start - time) // 60_000}:{(end + start - time) // 1000 % 60}'
@@ -157,7 +163,10 @@ class Timer(TextLine):
         if time == end:
             self.line = '0:00'
             self.root.is_game_on = False
-            self.root.gui.logo.use()
+            self.root.gui.results.set_data(keystrokes=(self.root.correct_presses, self.root.wrong_presses),
+                                           wpm=self.root.wpm_data,
+                                           words=(self.root.correct_words_count, self.root.wrong_words_count))
+            self.root.gui.results.use()
 
     def start(self):
         self.root.gui.animation_manager.add(self._get_animation())
@@ -185,7 +194,8 @@ class Input(TextInput):
 
             if not current_word_data.word.startswith(self.line):
                 self.root.wrong_presses += 1
-            self.root.all_presses += 1
+            else:
+                self.root.correct_presses += 1
 
 
 @dataclass
@@ -236,19 +246,3 @@ class PlayingLine(TextLine):
             end = self._line[start:].index(' ') + start
 
             self._words_data.append(_GeneratedWord(start, end, self._line[start:end]))
-
-
-class Logo(Root):
-    def __init__(self, ctx):
-        super().__init__(ctx, 'logo')
-
-    def build(self) -> None:
-        def on_press():
-            self.gui.main.use()
-
-        al = AnchorLayout(parent=self, pressable=True, press_func=on_press)
-
-        char_size = 100
-        font = Font(name='Inkfree', char_size=char_size)
-
-        TextLine(parent=al, line='TypingGame', font=font, id='textfield')

@@ -93,6 +93,7 @@ class GUILayout(GUIObject, ABC):
         self._mem_texture = self.ctx.texture(size=self.size, components=4)
         self._mem_texture.filter = (mgl.NEAREST, mgl.NEAREST)
 
+        print(self.size, self, self.root)
         self._framebuffer.release()
         self._framebuffer = self.ctx.framebuffer(self._mem_texture)
 

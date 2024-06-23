@@ -5,7 +5,7 @@ from .gui_layout import GUILayout
 
 
 class LineLayout(GUILayout):
-    def __init__(self, padding=20, spacing=20, orientation='vertical', **kwargs):
+    def __init__(self, padding=0, spacing=0, orientation='vertical', **kwargs):
         super().__init__(**kwargs)
 
         self._padding = padding
