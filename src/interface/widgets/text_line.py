@@ -16,6 +16,8 @@ class TextLine(GUILayout):
         self._pen = [0, 0]
         self.visible_widgets_count = 0
 
+        self._auto_size = self.width_hint == self.base_width is None and self.height_hint == self.base_height is None
+
         self.char_size = self._font.char_size
         self.line_height = self.char_size
 
@@ -38,15 +40,17 @@ class TextLine(GUILayout):
         for symbol in line:
             self._add_char(symbol)
 
-        self._min_size = (self._pen[0], int(self.line_height + self.char_size / 2))
-        self._base_size = self.min_size
-        self.size = self._min_size
+        if self._auto_size:
+            self._base_size = (self._pen[0], int(self.char_size * 1.5))
+
+        self.redraw_request()
 
     def _add_char(self, symbol: str) -> None:
         glyph = self._font.get_glyph(ord(symbol))
 
         if symbol not in self._bitmap_textures:
             self._bitmap_textures[symbol] = self.ctx.texture(size=glyph.size, data=glyph.bitmap, components=1)
+            self._bitmap_textures[symbol].filter = (mgl.NEAREST, mgl.NEAREST)
 
         char = _Char(parent=self, glyph=glyph, texture=self._bitmap_textures[symbol])
         self._update_char_pos(char)
@@ -61,6 +65,9 @@ class TextLine(GUILayout):
         for char in self._widgets:
             self._update_char_pos(char)
 
+        if self._auto_size:
+            self._base_size = (self._pen[0], int(self.line_height + self.char_size / 2))
+
     def _update_char_pos(self, char: _Char):
         char.pos = (self._pen[0] + char.glyph.offset[0],
                     self._pen[1] - char.glyph.offset[1] - char.glyph.size[1])
@@ -69,16 +76,13 @@ class TextLine(GUILayout):
 
     # /////////////////////////////////////////////////// DISPLAY //////////////////////////////////////////////////////
 
-    def _redraw(self) -> None:
-        for widget in self._widgets:
-            widget.draw()
-
     def set_color(self, i: int | slice, color: tuple[float, float, float]) -> None:
         if isinstance(i, int):
             self._widgets[i].color = color
         elif isinstance(i, slice):
             for w in self._widgets[i]:
                 w.color = color
+        self.redraw_request()
 
     # /////////////////////////////////////////////////// RELEASE //////////////////////////////////////////////////////
 

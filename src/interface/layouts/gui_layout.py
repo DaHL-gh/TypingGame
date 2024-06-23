@@ -25,7 +25,8 @@ class GUILayout(GUIObject, ABC):
 
     def add(self, widget: Child):
         self._widgets.append(widget)
-        self._widget_ids[widget.id] = widget
+        if widget.id is not None:
+            self._widget_ids[widget.id] = widget
 
         self.update_request()
 
@@ -59,8 +60,9 @@ class GUILayout(GUIObject, ABC):
 
         for widget in self._widgets:
             if widget.cords_in_rect(mouse_pos):
-                if widget.mouse_down(button_name, mouse_pos, count) is not None:
-                    return widget.mouse_down(button_name, mouse_pos, count)
+                widget = widget.mouse_down(button_name, mouse_pos, count)
+                if widget is not None:
+                    return widget
 
         return super().mouse_down(button_name, mouse_pos, count)
 
@@ -68,8 +70,9 @@ class GUILayout(GUIObject, ABC):
 
         for widget in self._widgets:
             if widget.cords_in_rect(mouse_pos):
-                if widget.mouse_up(button_name, mouse_pos) is not None:
-                    return widget.mouse_up(button_name, mouse_pos)
+                widget = widget.mouse_up(button_name, mouse_pos)
+                if widget is not None:
+                    return widget
 
         return super().mouse_up(button_name, mouse_pos)
 
@@ -78,7 +81,7 @@ class GUILayout(GUIObject, ABC):
     def update_request(self):
         if not self._needs_update:
             self._needs_update = True
-            self.parent.redraw_request()
+            self.parent.update_request()
 
     def redraw_request(self):
         if not self._needs_redraw:
@@ -88,12 +91,13 @@ class GUILayout(GUIObject, ABC):
     def _update_framebuffer(self) -> None:
         self._mem_texture.release()
         self._mem_texture = self.ctx.texture(size=self.size, components=4)
+        self._mem_texture.filter = (mgl.NEAREST, mgl.NEAREST)
 
         self._framebuffer.release()
         self._framebuffer = self.ctx.framebuffer(self._mem_texture)
 
     def update_layout(self):
-        if self._needs_update or True:
+        if self._needs_update:
 
             for w in self._widgets:
                 if hasattr(w, 'update_layout'):

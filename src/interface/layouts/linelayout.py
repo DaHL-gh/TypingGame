@@ -112,7 +112,7 @@ class LineLayout(GUILayout):
             min_height += self._padding * 2
             min_width += self._padding * 2 + self._spacing * (len(self._widgets) - 1)
 
-        self.min_size = (min_width, min_height)
+        self._min_size = (min_width, min_height)
 
     def add(self, widget: Child):
         if self.orientation == 'vertical':

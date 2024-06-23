@@ -1,5 +1,6 @@
 from __future__ import annotations
 from .misc.types import Child, Root
+from .misc.animation_manager import AnimationManager
 
 import moderngl as mgl
 
@@ -15,6 +16,7 @@ class GUI:
             cls._instances[ctx] = super(GUI, cls).__new__(cls)
 
             cls._ctx = ctx
+            cls._animation_manager = AnimationManager()
 
             cls._size = ctx.screen.size
             cls._current_root = None
@@ -30,7 +32,6 @@ class GUI:
         self._current_root = self._roots[root_id]
 
     def add(self, root: Root) -> None:
-        print(self)
         if root.id in self._roots:
             raise NameError(f'Root with id: {root.id} already exist in this GUI class')
 
@@ -48,6 +49,10 @@ class GUI:
     @property
     def ctx(self) -> mgl.Context:
         return self._ctx
+
+    @property
+    def animation_manager(self) -> AnimationManager:
+        return self._animation_manager
 
     @property
     def current_root(self):

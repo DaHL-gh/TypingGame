@@ -17,8 +17,6 @@ class Root(ABC):
         # MGL ATTRIBUTES
         self._ctx = ctx
 
-
-
         self._vertices = self.ctx.buffer(np.array(((-1, 1), (-1, -1), (1, 1), (1, -1)), dtype='float32'))
         self._vao = self.ctx.vertex_array(ProgramManager(self.ctx).get('textured_box'),
                                           [
@@ -70,6 +68,10 @@ class Root(ABC):
     @property
     def id(self):
         return self._id
+
+    @property
+    def root(self):
+        return self
 
     @property
     def framebuffer(self) -> mgl.Framebuffer:
@@ -127,7 +129,7 @@ class Root(ABC):
         if self._widget is None:
             return
 
-        if self._needs_update or True:
+        if self._needs_update:
             self._widget.pos = (0, 0)
             self._widget.size = self.size
 
@@ -136,6 +138,7 @@ class Root(ABC):
     def _update_framebuffer(self) -> None:
         self._mem_texture.release()
         self._mem_texture = self.ctx.texture(size=self.size, components=4)
+        self._mem_texture.filter = (mgl.NEAREST, mgl.NEAREST)
 
         self._framebuffer.release()
         self._framebuffer = self.ctx.framebuffer(self._mem_texture)
@@ -153,14 +156,10 @@ class Root(ABC):
 
     def redraw(self) -> None:
         if self._needs_redraw:
-            self.update_layout()
-
             self._framebuffer.use()
             self._framebuffer.clear()
 
             self._widget.draw()
-
-            self.update_layout()
 
             self._needs_redraw = False
 

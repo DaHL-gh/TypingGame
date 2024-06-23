@@ -16,22 +16,33 @@ class GUIObject(ABC):
                  id: str | None = None,
                  size: tuple[int | None, int | None] = (None, None),
                  min_size: tuple[int | None, int | None] = (None, None),
+                 max_size: tuple[int | None, int | None] = (None, None),
                  size_hint: tuple[float | None, float | None] = (None, None),
                  pos: tuple[int, int] = (0, 0),
                  program: mgl.Program | None = None,
                  texture: mgl.Texture | None = None,
+                 keyboard_press_func: Callable | None = None,
                  press_func: Callable | None = None,
                  release_func: Callable | None = None,
-                 pressable: bool =False):
+                 pressable: bool = False,
+                 resize_func: Callable | None = None,
+                 repos_func: Callable | None = None,
+                 in_focus_func: Callable | None = None,
+                 out_focus_func: Callable | None = None):
 
-        self.parent = parent
+        # TREE RELATED
+        self._id = id
+        self._parent = parent
 
         # FORM
+        self._resize_func = resize_func
         self._size = tuple(int(size[i]) if size[i] is not None else 1 for i in (0, 1))
         self._min_size = tuple(max(int(min_size[i]), self._size[i]) if min_size[i] is not None else 1 for i in range(2))
+        self._max_size = tuple(min(int(max_size[i]), self._size[i]) if min_size[i] is not None else 1 for i in range(2))
         self._base_size = size
         self._size_hint = size_hint
 
+        self._repos_func = repos_func
         self._pos = pos
 
         # MGL ATTRIBUTES
@@ -53,13 +64,21 @@ class GUIObject(ABC):
                                                ])
         self._update_vertices()
 
+        # INPUT
+        self._keyboard_press_func = keyboard_press_func
+
         self.pressable = pressable
         self._press_func = press_func
         self._release_func = release_func
 
+        self._is_in_focus = False
+        self._in_focus_func = in_focus_func
+        self._out_focus_func = out_focus_func
+
+        # DEBUG
         self.show_bbox = self.parent.show_bbox
 
-        self._id = id
+        # ADD TO PARENT
         self.parent.add(self)
 
     def _get_vao(self) -> mgl.VertexArray:
@@ -86,12 +105,24 @@ class GUIObject(ABC):
         return self._id
 
     @property
+    def parent(self):
+        return self._parent
+
+    @property
+    def root(self):
+        return self._parent.root
+
+    @property
     def texture(self) -> mgl.Texture:
         return self._texture
 
     @property
     def program(self) -> mgl.Program:
         return self._program
+
+    @property
+    def is_in_focus(self):
+        return self._is_in_focus
 
     @property
     def show_bbox(self) -> bool:
@@ -107,7 +138,11 @@ class GUIObject(ABC):
 
     @pos.setter
     def pos(self, value: tuple[int, int]):
-        self._pos = value
+        if self._pos != value:
+            self._pos = value
+
+            if self._repos_func is not None:
+                self._repos_func()
 
         self._update_vertices()
 
@@ -123,11 +158,15 @@ class GUIObject(ABC):
 
     @size.setter
     def size(self, value: tuple[int, int]):
-        self._size = (max(self._min_size[0], value[0]), max(self._min_size[1], value[1]))
+        if self._size != value:
+            self._size = (max(self._min_size[0], value[0]), max(self._min_size[1], value[1]))
 
-        self._update_vertices()
+            if self._resize_func is not None:
+                self._resize_func()
 
-        self.parent.update_request()
+            self._update_vertices()
+
+            self.parent.update_request()
 
     @property
     def width(self) -> int:
@@ -185,11 +224,6 @@ class GUIObject(ABC):
     def min_size(self) -> tuple[int, int]:
         return self._min_size
 
-    @min_size.setter
-    def min_size(self, value: tuple[int, int]):
-        self._min_size = value
-        self.size = (max(self._size[0], value[0]), max(self._size[1], value[1]))
-
     @property
     def min_width(self) -> int:
         return self._min_size[0]
@@ -197,6 +231,18 @@ class GUIObject(ABC):
     @property
     def min_height(self) -> int:
         return self._min_size[1]
+
+    @property
+    def max_size(self) -> tuple[int, int]:
+        return self._max_size
+
+    @property
+    def max_width(self) -> int:
+        return self._max_size[0]
+
+    @property
+    def max_height(self) -> int:
+        return self._max_size[1]
 
     # /////////////////////////////////////////////////// UPDATE ///////////////////////////////////////////////////////
 
@@ -208,6 +254,24 @@ class GUIObject(ABC):
 
     # //////////////////////////////////////////////////// INPUT ///////////////////////////////////////////////////////
 
+    def in_focus(self):
+        self._is_in_focus = True
+        if self._in_focus_func is not None:
+            self._in_focus_func()
+        self._in_focus()
+
+    def _in_focus(self):
+        pass
+
+    def out_focus(self):
+        self._is_in_focus = False
+        if self._out_focus_func is not None:
+            self._out_focus_func()
+        self._out_focus()
+
+    def _out_focus(self):
+        pass
+
     def mouse_down(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
         if not self.pressable:
             return
@@ -215,7 +279,9 @@ class GUIObject(ABC):
         mouse_pos = (mouse_pos[0] - self.window_pos[0], mouse_pos[1] - self.window_pos[1])
         if self._press_func is not None:
             self._press_func()
-        return self._mouse_down(button_name, mouse_pos, count)
+        self._mouse_down(button_name, mouse_pos, count)
+
+        return self
 
     def _mouse_down(self, button_name: str, mouse_pos: tuple[int, int], count: int) -> Child | None:
         return None
@@ -227,7 +293,9 @@ class GUIObject(ABC):
         mouse_pos = (mouse_pos[0] - self.window_pos[0], mouse_pos[1] - self.window_pos[1])
         if self._release_func is not None:
             self._release_func()
-        return self._mouse_up(button_name, mouse_pos)
+        self._mouse_up(button_name, mouse_pos)
+
+        return self
 
     def _mouse_up(self, button_name: str, mouse_pos: tuple[int, int]) -> Child | None:
         return None
@@ -241,7 +309,10 @@ class GUIObject(ABC):
         return None
 
     def keyboard_press(self, key: int, unicode: str):
-        return self._keyboard_press(key, unicode)
+        self._keyboard_press(key, unicode)
+
+        if self._keyboard_press_func is not None:
+            self._keyboard_press_func()
 
     def _keyboard_press(self, key: int, unicode: str):
         return None

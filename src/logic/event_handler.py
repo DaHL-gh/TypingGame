@@ -44,13 +44,6 @@ class EventHandler:
                 if event.dict['key'] == pg.K_F2:
                     pass
 
-                if event.dict['key'] == pg.K_F3:
-                    from PIL import Image
-                    fbo = gui.main.framebuffer
-                    print(fbo.read(), fbo.size)
-                    Image.frombytes('RGBA', fbo.size, fbo.read(components=4), 'raw', 'RGBA', 0, -1).save(
-                        'ebats_ya_sdelal_scrinshot.png')
-
                 if self.last_press.widget is not None:
                     self.last_press.widget.keyboard_press(event.dict['key'], event.dict['unicode'])
 
@@ -81,7 +74,18 @@ class EventHandler:
 
                 self.last_press.time = current_time
                 self.last_press.pos = mouse_click.pos
+
+                x = self.last_press.widget
+
                 self.last_press.widget = gui.mouse_down(mouse_click.b_name, mouse_click.pos, self.last_press.count)
+
+                if x != self.last_press.widget:
+                    if x is not None:
+                        x.out_focus()
+                    if self.last_press.widget is not None:
+                        self.last_press.widget.in_focus()
+
+                print(self.last_press.widget, x)
 
             elif event.type == pg.MOUSEBUTTONUP:
                 mouse_click = MouseClick(event)

@@ -1,9 +1,11 @@
 import pandas as pd
 from random import randint
 
+from ..settings import BASE_DIR
+
 
 class TextGenerator:
-    words_data = pd.read_csv('words_data.csv', sep=',')
+    words_data = pd.read_csv(f'{BASE_DIR}\src\logic\words_data.csv', sep=',')
 
     def __init__(self, limit: int | None = None):
         self._prefix_sum = None
@@ -67,7 +69,4 @@ class TextGenerator:
 
 
 if __name__ == '__main__':
-    txt_gen = TextGenerator()
-
-    for _ in range(200):
-        print(txt_gen.get(), end=' ')
+    print('123456'[0:5])

@@ -55,6 +55,7 @@ class Window:
         while True:
             self.ctx.clear()
             self.event_handler.handle_events()
+            self.gui.animation_manager.go(pg.time.get_ticks())
 
             self.draw()
             # print(self.summ)

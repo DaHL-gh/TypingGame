@@ -78,3 +78,4 @@ class _Char(GUIObject):
         self._color_buffer.release()
 
         super().release(keep_texture)
+
