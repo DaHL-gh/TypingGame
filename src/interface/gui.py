@@ -1,8 +1,14 @@
 from __future__ import annotations
-from .misc.types import Child, Root
-from .misc.animation_manager import AnimationManager
 
+import glm
+import numpy as np
 import moderngl as mgl
+import pygame as pg
+
+from .misc.mglmanagers import BufferManager
+from .misc.types import Child, Root
+from .misc.animation_manager import AnimationManager, Animation
+
 
 
 class GUI:
@@ -22,7 +28,24 @@ class GUI:
             cls._current_root = None
             cls._roots = {}
 
+            cls.init(cls._instances[ctx])
+
         return cls._instances[ctx]
+
+    def init(self):
+        # Buffers
+        BufferManager(self.ctx).create('UV', np.array(((0, 0), (0, 1), (1, 0), (1, 1)), dtype='float32'))
+
+        # Animations
+        def _back_anim_func(start: int, time: int, end: int):
+            if self._current_root is None:
+                return
+
+            self.current_root.backgorund.vao.program['time'].write(glm.vec1(time / 1000))
+            self.current_root.backgorund.redraw_request()
+
+        self.animation_manager.add(Animation(id='backgorund', func=_back_anim_func,
+                                             start=pg.time.get_ticks(), interval=30))
 
     def build(self):
         for root in self._roots.values():

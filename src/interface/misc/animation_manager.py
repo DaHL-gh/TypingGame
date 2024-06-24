@@ -23,11 +23,20 @@ class AnimationManager:
 
         self.endings: list[Animation] = []
 
+    def get(self, id: str):
+        for a in self.non_interval:
+            if a.id == id:
+                return a
+
+        for a in self.with_interval:
+            if a.id == id:
+                return a
+
     def add(self, animation: Animation):
         animation.func(animation.start, animation.start, animation.end)
 
         if animation.id in self.animations_ids:
-            print('there is a problem')
+            print('WARNING: animation with this id already exists; it has been replaced')
         self.animations_ids[animation.id] = animation
 
         if animation.interval is None:

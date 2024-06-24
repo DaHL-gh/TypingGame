@@ -38,8 +38,6 @@ class Window:
         # EVENT HANDLER
         self.event_handler = EventHandler(self)
 
-        BufferManager(self.ctx).create('UV', np.array(((0, 0), (0, 1), (1, 0), (1, 1)), dtype='float32'))
-
         # GUI
         self.gui = GUI(self.ctx)
 
@@ -50,8 +48,6 @@ class Window:
         Results(self.ctx)
 
         self.gui.build()
-
-
 
     def draw(self):
         self.gui.draw()

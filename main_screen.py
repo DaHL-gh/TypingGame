@@ -21,6 +21,8 @@ class MainScreen(Root):
     def __init__(self, ctx):
         super().__init__(ctx, 'main')
 
+        self.timer_len = 2
+
         self.correct_presses = 0
         self.wrong_presses = 0
         self.wpm_data = 0
@@ -48,8 +50,6 @@ class MainScreen(Root):
         al = AnchorLayout(parent=self)
 
         LineLayout(parent=al, size_hint=(1, 1), program=ProgramManager(self.ctx).get('background_fog'), id='backgorund')
-
-        self.root.gui.animation_manager.add(self._get_animation())
 
         # [
         ll = LineLayout(parent=al, size_hint=(0.8, 0.6), padding=20, spacing=40, orientation='vertical',
@@ -97,6 +97,8 @@ class MainScreen(Root):
             current_word_data = current_line.words_data[self.current_word_num]
             current_line.set_color(i=slice(current_word_data.start, current_word_data.end), color=(0.8, 0.8, 0.8))
 
+        Timer(parent=input_layout, font=font, line='0:00', size=(int(char_size * 4), int(char_size * 1.5)), id='timer')
+
         def input_key_press():
             self.is_game_on = True
 
@@ -113,8 +115,6 @@ class MainScreen(Root):
         Input(parent=input_layout, size=(None, int(char_size * 1.5)), font=font,
               id='input_line', pressable=True, validate_func=input_validation, keyboard_press_func=input_key_press)
 
-        Timer(parent=input_layout, font=font, line='0:00', size=(int(char_size * 4), int(char_size * 1.5)), id='timer')
-
         GUIObject(parent=input_layout, size=(int(char_size * 1.5), int(char_size * 1.5)), press_func=self.reset_game,
                   pressable=True, id='reset_button', texture=TextureManager(self.ctx).get('reset_button.png'))
         # ]----
@@ -122,15 +122,6 @@ class MainScreen(Root):
         # ]--
         # ]
 
-    # BACKGROUND FOG
-    def _get_animation(self) -> Animation:
-        return Animation(id='backgorund', func=self._animation_func, start=pg.time.get_ticks(), interval=30)
-
-    def _animation_func(self, start: int, time: int, end: int):
-        self.backgorund.vao.program['time'].write(glm.vec1(time / 1000))
-        self.backgorund.redraw_request()
-
-    # GAME LOGIC
     def skip_line(self):
         self.current_word_num = 0
         text_view_ll = self.gui.main.central_ll.text_view_ll
@@ -171,10 +162,10 @@ class Timer(TextLine):
         super().__init__(font, **kwargs)
 
     def _get_animation(self) -> Animation:
-        return Animation(id='timer', func=self._animation_func, start=pg.time.get_ticks(), interval=1000, end=60_000)
+        return Animation(id='timer', func=self._animation_func,
+                         start=pg.time.get_ticks(), interval=1000, end=self.root.timer_len * 1000)
 
     def _animation_func(self, start: int, time: int, end: int):
-        print(end + start - time)
         self.line = f'{(end + start - time) // 60_000}:{(end + start - time) // 1000 % 60}'
 
         if time == end:

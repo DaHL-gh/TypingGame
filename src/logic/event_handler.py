@@ -44,6 +44,9 @@ class EventHandler:
                 if event.dict['key'] == pg.K_F2:
                     pass
 
+                if event.dict['key'] == pg.K_F11:
+                    pg.display.toggle_fullscreen()
+
                 if self.last_press.widget is not None:
                     self.last_press.widget.keyboard_press(event.dict['key'], event.dict['unicode'])
 
