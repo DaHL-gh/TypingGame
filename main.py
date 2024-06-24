@@ -1,15 +1,11 @@
-import numpy as np
 import pygame as pg
 import moderngl as mgl
 from structlinks.LinkedList import LinkedList
-
-from test_screen import Test
 
 from logo_screen import Logo
 from main_screen import MainScreen
 from result_screen import Results
 from src.interface.gui import GUI
-from src.interface.misc.mglmanagers import BufferManager
 from src.logic.event_handler import EventHandler
 from src.settings import W_SIZE, FPS
 
@@ -25,8 +21,6 @@ class Window:
         # CREATING CONTEXT
         self.ctx = mgl.create_context()
         self.ctx.enable(mgl.BLEND)
-        # self.ctx.blend_func = (mgl.SRC_ALPHA, mgl.ONE_MINUS_SRC_ALPHA,
-        #                        mgl.SRC_COLOR, mgl.DST_COLOR)
 
         # WINDOW PARAMETERS
         self.fps = fps
@@ -40,8 +34,6 @@ class Window:
 
         # GUI
         self.gui = GUI(self.ctx)
-
-        # Test(self.ctx).use()
 
         Logo(self.ctx).use()
         MainScreen(self.ctx)

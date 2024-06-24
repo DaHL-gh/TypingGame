@@ -1,5 +1,5 @@
 from __future__ import annotations
-from ..misc.types import Parent, Child
+from ..misc.types import Child
 
 import dataclasses
 from typing import Any

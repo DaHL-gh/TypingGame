@@ -1,9 +1,5 @@
-import glm
-import pygame as pg
-
 from src.interface.layouts.anchorlayout import AnchorLayout
 from src.interface.layouts.linelayout import LineLayout
-from src.interface.misc.animation_manager import Animation
 from src.interface.misc.mglmanagers import ProgramManager
 from src.interface.widgets.root import Root
 from src.interface.widgets.text_line import TextLine

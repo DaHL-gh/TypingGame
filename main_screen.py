@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import glm
 import pygame as pg
 
 from src.interface.misc.mglmanagers import TextureManager, ProgramManager
@@ -10,8 +9,9 @@ from src.interface.widgets.gui_object import GUIObject
 from src.interface.widgets.root import Root
 from src.interface.layouts.anchorlayout import AnchorLayout
 from src.interface.layouts.linelayout import LineLayout
+from src.interface.widgets.text_render import Font
 from src.interface.widgets.text_line import TextLine
-from src.interface.widgets.text_input import TextInput, Font
+from src.interface.widgets.text_input import TextInput
 from src.interface.misc.animation_manager import Animation
 from src.logic.text_generator import TextGenerator
 from src.logic.levenshtein_distance import levenshtein_distance
@@ -21,7 +21,7 @@ class MainScreen(Root):
     def __init__(self, ctx):
         super().__init__(ctx, 'main')
 
-        self.timer_len = 2
+        self.timer_len = 60
 
         self.correct_presses = 0
         self.wrong_presses = 0
@@ -147,9 +147,11 @@ class MainScreen(Root):
             current_word_data = current_line.words_data[self.current_word_num]
             current_line.set_color(i=slice(current_word_data.start, current_word_data.end), color=(0.8, 0.8, 0.8))
 
-            self.all_presses = 0
+            self.correct_presses = 0
             self.wrong_presses = 0
+            self.wpm_data = 0
             self.correct_words_count = 0
+            self.wrong_words_count = 0
 
             self.current_word_num = 0
 
@@ -236,7 +238,6 @@ class PlayingLine(TextLine):
     def __init__(self, font: Font, **kwargs):
         super().__init__(font, **kwargs)
 
-        current_word = 0
         self._words_data = []
 
     @property

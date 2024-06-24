@@ -4,7 +4,7 @@ from ..misc.types import Child, Parent
 from typing import Callable
 import glm
 import moderngl as mgl
-from abc import ABC, abstractmethod
+from abc import ABC
 
 from ..misc.mglmanagers import ProgramManager, BufferManager, TextureManager
 from ...functions import get_rect_vertices

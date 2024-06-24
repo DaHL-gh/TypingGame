@@ -1,11 +1,10 @@
 from __future__ import annotations
 from ..misc.types import Child
 
-import moderngl as mgl
 from typing import Callable
 
 from .text_line import TextLine
-from .text_render import _Char, Font
+from .text_render import _Char
 
 
 class TextInput(TextLine):

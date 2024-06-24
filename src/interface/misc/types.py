@@ -1,8 +1,6 @@
 from typing import TypeVar, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..gui import GUI
-
     from ..widgets.root import Root
 
     from ..layouts.linelayout import LineLayout
