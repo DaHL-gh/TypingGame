@@ -66,7 +66,3 @@ class TextGenerator:
         rand_int = randint(int(self._prefix_sum[0]), int(self._prefix_sum[-1]))
 
         return self._words[self._binary_search(rand_int, self._prefix_sum)]
-
-
-if __name__ == '__main__':
-    print('123456'[0:5])

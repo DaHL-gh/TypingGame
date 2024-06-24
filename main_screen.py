@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+
+import glm
 import pygame as pg
 
-from src.interface.misc.mglmanagers import TextureManager
+from src.interface.misc.mglmanagers import TextureManager, ProgramManager
 from src.interface.widgets.gui_object import GUIObject
 from src.interface.widgets.root import Root
 from src.interface.layouts.anchorlayout import AnchorLayout
@@ -39,10 +41,16 @@ class MainScreen(Root):
         self._is_game_on = value
 
     def build(self) -> None:
+
         char_size = 30
         font = Font(name='CascadiaMono', char_size=char_size)
 
         al = AnchorLayout(parent=self)
+
+        LineLayout(parent=al, size_hint=(1, 1), program=ProgramManager(self.ctx).get('background_fog'), id='backgorund')
+
+        self.root.gui.animation_manager.add(self._get_animation())
+
         # [
         ll = LineLayout(parent=al, size_hint=(0.8, 0.6), padding=20, spacing=40, orientation='vertical',
                         id='central_ll')
@@ -75,10 +83,9 @@ class MainScreen(Root):
                 self.wpm_data += 1
             else:
                 color = (1, 0, 0)
-                self.correct_words_count += 1
+                self.wrong_words_count += 1
                 ld = levenshtein_distance(current_word_data.word, input_word)
                 self.wpm_data += ld
-                print(ld)
             current_line.set_color(i=slice(current_word_data.start, current_word_data.end), color=color)
 
             # пропуск строки
@@ -115,6 +122,15 @@ class MainScreen(Root):
         # ]--
         # ]
 
+    # BACKGROUND FOG
+    def _get_animation(self) -> Animation:
+        return Animation(id='backgorund', func=self._animation_func, start=pg.time.get_ticks(), interval=30)
+
+    def _animation_func(self, start: int, time: int, end: int):
+        self.backgorund.vao.program['time'].write(glm.vec1(time / 1000))
+        self.backgorund.redraw_request()
+
+    # GAME LOGIC
     def skip_line(self):
         self.current_word_num = 0
         text_view_ll = self.gui.main.central_ll.text_view_ll
@@ -158,6 +174,7 @@ class Timer(TextLine):
         return Animation(id='timer', func=self._animation_func, start=pg.time.get_ticks(), interval=1000, end=60_000)
 
     def _animation_func(self, start: int, time: int, end: int):
+        print(end + start - time)
         self.line = f'{(end + start - time) // 60_000}:{(end + start - time) // 1000 % 60}'
 
         if time == end:

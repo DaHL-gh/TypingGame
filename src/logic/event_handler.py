@@ -85,8 +85,6 @@ class EventHandler:
                     if self.last_press.widget is not None:
                         self.last_press.widget.in_focus()
 
-                print(self.last_press.widget, x)
-
             elif event.type == pg.MOUSEBUTTONUP:
                 mouse_click = MouseClick(event)
 

@@ -9,7 +9,9 @@ class Animation:
     start: int
     interval: int | None = None
     end: int | None = None
-    last_work: int = 0
+
+    def __post_init__(self):
+        self.last_work = self.start
 
 
 class AnimationManager:
@@ -19,10 +21,11 @@ class AnimationManager:
         self.non_interval: list[Animation] = []
         self.with_interval: list[Animation] = []
 
-        self.endless: list[Animation] = []
         self.endings: list[Animation] = []
 
     def add(self, animation: Animation):
+        animation.func(animation.start, animation.start, animation.end)
+
         if animation.id in self.animations_ids:
             print('there is a problem')
         self.animations_ids[animation.id] = animation
@@ -34,8 +37,6 @@ class AnimationManager:
 
         if animation.end is not None:
             self.endings.append(animation)
-        else:
-            self.endless.append(animation)
 
     def pop(self, id: str):
         self.remove(self.animations_ids[id])
@@ -49,14 +50,8 @@ class AnimationManager:
 
         if animation.end is not None:
             self.endings.remove(animation)
-        else:
-            self.endless.remove(animation)
 
     def go(self, time: int):
-
-        for a in self.endless:
-            a.func(a.start, time, a.end)
-
         for a in self.endings:
             if a.end < time - a.start:
                 a.func(a.start, a.end, a.end)
@@ -68,8 +63,8 @@ class AnimationManager:
             a.func(a.start, time, a.end)
 
         for a in self.with_interval:
-            if time - a.last_work > a.interval:
-                a.func(a.start, time, a.end)
-                a.last_work = time
+            if time > a.last_work + a.interval:
+                a.last_work += a.interval
+                a.func(a.start, a.last_work, a.end)
 
 

@@ -25,8 +25,8 @@ class Window:
         # CREATING CONTEXT
         self.ctx = mgl.create_context()
         self.ctx.enable(mgl.BLEND)
-        self.ctx.blend_func = (mgl.SRC_ALPHA, mgl.ONE_MINUS_SRC_ALPHA,
-                               mgl.SRC_COLOR, mgl.DST_COLOR)
+        # self.ctx.blend_func = (mgl.SRC_ALPHA, mgl.ONE_MINUS_SRC_ALPHA,
+        #                        mgl.SRC_COLOR, mgl.DST_COLOR)
 
         # WINDOW PARAMETERS
         self.fps = fps
@@ -43,13 +43,15 @@ class Window:
         # GUI
         self.gui = GUI(self.ctx)
 
-        Test(self.ctx).use()
+        # Test(self.ctx).use()
 
-        # Logo(self.ctx).use()
-        # MainScreen(self.ctx)
-        # Results(self.ctx)
+        Logo(self.ctx).use()
+        MainScreen(self.ctx)
+        Results(self.ctx)
 
         self.gui.build()
+
+
 
     def draw(self):
         self.gui.draw()

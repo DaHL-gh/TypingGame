@@ -121,6 +121,10 @@ class GUIObject(ABC):
         return self._program
 
     @property
+    def vao(self) -> mgl.VertexArray:
+        return self._vao
+
+    @property
     def is_in_focus(self):
         return self._is_in_focus
 

@@ -6,16 +6,6 @@ out vec4 fragColor;
 
 uniform float time;
 
-float colormap_red(float x) {
-    if (x < 0.0) {
-        return 54.0 / 255.0;
-    } else if (x < 20049.0 / 82979.0) {
-        return (829.79 * x + 54.51) / 255.0;
-    } else {
-        return 1.0;
-    }
-}
-
 float colormap_green(float x) {
     if (x < 20049.0 / 82979.0) {
         return 0.0;
@@ -28,22 +18,8 @@ float colormap_green(float x) {
     }
 }
 
-float colormap_blue(float x) {
-    if (x < 0.0) {
-        return 54.0 / 255.0;
-    } else if (x < 7249.0 / 82979.0) {
-        return (829.79 * x + 54.51) / 255.0;
-    } else if (x < 20049.0 / 82979.0) {
-        return 127.0 / 255.0;
-    } else if (x < 327013.0 / 810990.0) {
-        return (792.02249341361393720147485376583 * x - 64.364790735602331034989206222672) / 255.0;
-    } else {
-        return 1.0;
-    }
-}
-
 vec4 colormap(float x) {
-    return vec4(colormap_red(x), colormap_green(x), colormap_blue(x), 1.0);
+    return vec4(vec3 (colormap_green(x)), 1.0);
 }
 
 
@@ -62,7 +38,7 @@ float noise(vec2 p){
     return res*res;
 }
 
-mat2 mtx = mat2( 0.80,  0.60, -0.60,  0.80 );
+mat2 mtx = mat2( 0.80,  0.40, -0.40,  0.80 );
 
 float fbm( vec2 p )
 {
@@ -71,7 +47,7 @@ float fbm( vec2 p )
     f += 0.500000*noise( p + time * 0.1 ); p = mtx*p*2.02;
     f += 0.031250*noise( p ); p = mtx*p*2.01;
     f += 0.450000*noise( p ); p = mtx*p*2.03;
-    f += 0.125000*noise( p ); p = mtx*p*2.01;
+    f += 0.425000*noise( p ); p = mtx*p*2.01;
     f += 0.062500*noise( p ); p = mtx*p*2.04;
     f += 0.015625*noise( p + cos(time) );
 
@@ -84,6 +60,6 @@ float pattern( in vec2 p )
 }
 
 void main() {
-	float shade = pattern(uv);
-    fragColor = vec4(colormap(shade).bbb * 0.3, shade);
+	float shade = pattern(uv * 2);
+    fragColor = vec4(colormap(shade).ggg * 0.4, shade);
 }
