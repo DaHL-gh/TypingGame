@@ -29,6 +29,12 @@ class EventHandler:
 
                 gui.size = window.size
 
+            if event.type == pg.WINDOWFOCUSLOST:
+                window.fps = window.out_of_focus_fps
+
+            if event.type == pg.WINDOWFOCUSGAINED:
+                window.fps = window.base_fps
+
             elif event.type == pg.QUIT:
                 pg.quit()
                 sys.exit()

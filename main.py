@@ -23,7 +23,9 @@ class Window:
         self.ctx.enable(mgl.BLEND)
 
         # WINDOW PARAMETERS
-        self.fps = fps
+        self.out_of_focus_fps = 1
+        self.base_fps = fps
+        self.fps = self.base_fps
         self.size = size
 
         # CLOCK
@@ -41,9 +43,6 @@ class Window:
 
         self.gui.build()
 
-    def draw(self):
-        self.gui.draw()
-
     def run(self):
         fps_buffer_size = 10
         fps_buffer = LinkedList([0 for _ in range(fps_buffer_size)])
@@ -51,11 +50,10 @@ class Window:
 
         while True:
             self.ctx.clear()
-            self.event_handler.handle_events()
-            self.gui.animation_manager.go(pg.time.get_ticks())
 
-            self.draw()
-            # print(self.summ)
+            self.event_handler.handle_events()
+            self.gui.animation_manager.update(pg.time.get_ticks())
+            self.gui.draw()
 
             self.summ -= fps_buffer.pop(0)
             x = self.clock.get_fps() / fps_buffer_size

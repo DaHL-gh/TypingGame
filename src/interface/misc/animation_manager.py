@@ -32,10 +32,10 @@ class AnimationManager:
             if a.id == id:
                 return a
 
-    def add(self, animation: Animation):
+    def add(self, animation: Animation, ignore_rebinding=False):
         animation.func(animation.start, animation.start, animation.end)
 
-        if animation.id in self.animations_ids:
+        if animation.id in self.animations_ids and ignore_rebinding:
             print('WARNING: animation with this id already exists; it has been replaced')
         self.animations_ids[animation.id] = animation
 
@@ -60,20 +60,21 @@ class AnimationManager:
         if animation.end is not None:
             self.endings.remove(animation)
 
-    def go(self, time: int):
-        for a in self.endings:
-            if a.end < time - a.start:
-                a.func(a.start, a.end, a.end)
-                self.remove(a)
+    def update(self, curr_time: int):
+        for anim in self.endings:
+            if anim.end < curr_time - anim.start:
+                anim.func(anim.start, anim.end, anim.end)
+                self.remove(anim)
             else:
                 break
 
-        for a in self.non_interval:
-            a.func(a.start, time, a.end)
+        for anim in self.non_interval:
+            anim.func(anim.start, curr_time, anim.end)
 
-        for a in self.with_interval:
-            if time > a.last_work + a.interval:
-                a.last_work += a.interval
-                a.func(a.start, a.last_work, a.end)
+        for anim in self.with_interval:
+            if curr_time > anim.last_work + anim.interval:
+                iter_num = (curr_time - anim.start) // anim.interval
+                anim.last_work = anim.start + anim.interval * iter_num
+                anim.func(anim.start, anim.last_work, anim.end)
 
 

@@ -5,17 +5,36 @@ from ..settings import BASE_DIR
 
 
 class TextGenerator:
-    words_data = pd.read_csv(f'{BASE_DIR}\src\logic\words_data.csv', sep=',')
 
-    def __init__(self, limit: int | None = None):
+    def __init__(self, limit: int | None = None, language='russian'):
         self._prefix_sum = None
 
+        self._language = language
+        self._words_df = self._get_words_df(language)
+
         if limit is None:
-            self.limit = len(self.words_data)
+            self.limit = len(self._words_df)
         else:
             self.limit = limit
 
-        self._words = self.words_data['Лемма'][:self.limit]
+        self._words = self._words_df['word'][:self.limit]
+
+    @property
+    def language(self):
+        return self._language
+
+    @language.setter
+    def language(self, value: str):
+        self._language = value
+
+        self._get_words_df(value)
+
+    @staticmethod
+    def _get_words_df(language):
+        try:
+            return pd.read_csv(f'{BASE_DIR}/data/words_data/{language}.csv', sep=';')
+        except FileNotFoundError:
+            raise NameError(f'No such words data for language name: {language}')
 
     @property
     def limit(self):
@@ -24,15 +43,15 @@ class TextGenerator:
     @limit.setter
     def limit(self, value: int | None):
         if value is None:
-            self._limit = len(self.words_data)
+            self._limit = len(self._words_df)
         else:
             self._limit = value
 
         self._calc_prefix_sum()
-        self._words = self.words_data['Лемма'][:value]
+        self._words = self._words_df['word'][:value]
 
     def _calc_prefix_sum(self) -> None:
-        weights = self.words_data['Частота (ipm)']
+        weights = self._words_df['count']
         self._prefix_sum = [0 for _ in range(self.limit)]
 
         temp = 0
